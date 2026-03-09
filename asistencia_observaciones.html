@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Observaciones - Colegio Francisco Palau y Quer</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pZf6eSWVerson..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+    <img src="logo.jpg" alt="Logo" class="site-logo">
+    <h1>Observaciones</h1>
+    <p>Colegio Francisco Palau y Quer</p>
+</header>
+
+<div id="message" class="message"></div>
+
+<div id="observaciones">
+
+<h3>Observaciones de Estudiantes</h3>
+
+<h4>Información Básica</h4>
+
+<div class="estudiante-container">
+    <input id="obsEstudiante" placeholder="Escribir nombre del estudiante" onkeyup="filtrarEstudiantes()">
+    <div id="estudiantesSugerencias"></div>
+</div>
+
+<input id="obsGrado" placeholder="Grado" readonly>
+
+<input id="obsFecha" type="date" placeholder="Fecha">
+
+<input id="obsDocente" placeholder="Docente">
+
+<h4>Detalles de la Observación</h4>
+<textarea id="obsDesempeno" rows="2" placeholder="Desempeño"></textarea>
+
+<textarea id="obsLlamados" rows="2" placeholder="Llamados de atención"></textarea>
+
+<textarea id="obsAnotaciones" rows="2" placeholder="Anotaciones"></textarea>
+
+<textarea id="obsAcciones" rows="2" placeholder="Acciones restaurativas"></textarea>
+
+<textarea id="obsFicha" rows="2" placeholder="Ficha"></textarea>
+
+<textarea id="obsSanciones" rows="2" placeholder="Sanciones"></textarea>
+
+<textarea id="obsCompromiso" rows="2" placeholder="Compromiso de convivencia"></textarea>
+
+<textarea id="obsObservaciones" rows="3" placeholder="Observaciones"></textarea>
+
+<button onclick="guardarObservacion()">Guardar Observación</button>
+<button onclick="exportarObservaciones()">Exportar Observaciones</button>
+
+<h4>Buscar por curso</h4>
+<select id="searchCurso">
+    <option value="">--Seleccionar curso--</option>
+    <option>Prescolar</option>
+    <option>1</option>
+    <option>2</option>
+    <option>3</option>
+    <option>4</option>
+    <option>5</option>
+    <option>6A</option>
+    <option>6B</option>
+    <option>7A</option>
+    <option>7B</option>
+    <option>8A</option>
+    <option>8B</option>
+    <option>9A</option>
+    <option>9B</option>
+    <option>10A</option>
+    <option>10B</option>
+    <option>11A</option>
+    <option>11B</option>
+</select>
+<button onclick="mostrarConteoCurso()">Contar observaciones</button>
+<div id="conteoCurso" class="message info" style="display:none; text-align:left; margin-top:10px;"></div>
+
+<div id="listaObservaciones" style="margin-top:20px;"></div>
+
+</div>
+
+<script src="script.js" defer></script>
+
+<script>
+let todosEstudiantes = {}; // { nombre: grado }
+
+function cargarEstudiantesParaObservaciones() {
+    window.todosEstudiantes = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key !== 'observaciones') {
+            try {
+                const data = JSON.parse(localStorage.getItem(key)) || [];
+                const parts = key.match(/(\d{4})(Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre)(.+)/);
+                if (parts) {
+                    const grado = parts[3];
+                    data.forEach(d => {
+                        if (d.nombre) {
+                            window.todosEstudiantes[d.nombre] = grado;
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+    }
+}
+
+function filtrarEstudiantes() {
+    const query = document.getElementById('obsEstudiante').value.toLowerCase();
+    const sugerenciasDiv = document.getElementById('estudiantesSugerencias');
+    sugerenciasDiv.innerHTML = '';
+    
+    if (query.length === 0) {
+        sugerenciasDiv.style.display = 'none';
+        return;
+    }
+    
+    const matches = Object.keys(window.todosEstudiantes).filter(nombre => 
+        nombre.toLowerCase().includes(query)
+    );
+    
+    if (matches.length > 0) {
+        sugerenciasDiv.style.display = 'block';
+        matches.forEach(nombre => {
+            const div = document.createElement('div');
+            div.textContent = nombre + ' (' + window.todosEstudiantes[nombre] + ')';
+            div.style.padding = '8px';
+            div.style.cursor = 'pointer';
+            div.style.borderBottom = '1px solid #eee';
+            div.addEventListener('mouseover', () => {
+                div.style.backgroundColor = '#f0f0f0';
+            });
+            div.addEventListener('mouseout', () => {
+                div.style.backgroundColor = 'white';
+            });
+            div.addEventListener('click', () => {
+                document.getElementById('obsEstudiante').value = nombre;
+                document.getElementById('obsGrado').value = window.todosEstudiantes[nombre];
+                sugerenciasDiv.innerHTML = '';
+                sugerenciasDiv.style.display = 'none';
+            });
+            sugerenciasDiv.appendChild(div);
+        });
+    } else {
+        sugerenciasDiv.style.display = 'none';
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (e.target.id !== 'obsEstudiante' && e.target.id !== 'estudiantesSugerencias') {
+        document.getElementById('estudiantesSugerencias').style.display = 'none';
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarEstudiantesParaObservaciones();
+    cargarObservaciones();
+});
+</script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarEstudiantesParaObservaciones();
+    cargarObservaciones();
+
+});
+</script>
+
+</body>
+</html>

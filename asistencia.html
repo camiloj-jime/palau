@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema Profesional de Asistencia</title>
+
+<link rel="stylesheet" href="style.css">
+
+
+</head>
+
+<body>
+
+<header>Sistema Profesional de Asistencia Escolar</header>
+
+<div id="message" class="message"></div>
+
+<div class="login" id="login">
+
+    <h2>Acceso Profesores</h2>
+
+    <label for="usuario">Usuario</label>
+    <input id="usuario" placeholder="Usuario">
+    <label for="clave">Contraseña</label>
+    <input id="clave" type="password" placeholder="Contraseña">
+
+    <button onclick="login()">Ingresar</button>
+
+</div>
+
+
+<div class="panel" id="panel">
+
+<div class="dashboard">
+
+<div class="card">
+<h3>Total Estudiantes</h3>
+<p id="total">0</p>
+</div>
+
+<div class="card">
+<h3>Presentes</h3>
+<p id="presentes">0</p>
+</div>
+
+<div class="card">
+<h3>Ausentes</h3>
+<p id="ausentes">0</p>
+</div>
+
+</div>
+
+
+<div class="controles">
+
+    <label for="anio">Año</label>
+    <select id="anio"></select>
+
+    <label for="mes">Mes</label>
+    <select id="mes">
+<option>Enero</option>
+<option>Febrero</option>
+<option>Marzo</option>
+<option>Abril</option>
+<option>Mayo</option>
+<option>Junio</option>
+<option>Julio</option>
+<option>Agosto</option>
+<option>Septiembre</option>
+<option>Octubre</option>
+<option>Noviembre</option>
+<option>Diciembre</option>
+</select>
+
+    <label for="salon">Salón</label>
+    <select id="salon">
+
+<option>Prescolar</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6A</option>
+<option>6B</option>
+<option>7A</option>
+<option>7B</option>
+<option>8A</option>
+<option>8B</option>
+<option>9A</option>
+<option>9B</option>
+<option>10A</option>
+<option>10B</option>
+<option>11A</option>
+<option>11B</option>
+
+</select>
+
+<label for="nombreEstudiante">Nombre del estudiante</label>
+    <input id="nombreEstudiante" placeholder="Nombre del estudiante">
+
+    <button onclick="agregar()">Agregar</button>
+
+    <!-- bulk addition -->
+    <label for="listaEstudiantes">Lista de nombres (una por línea)</label>
+    <textarea id="listaEstudiantes" rows="4" placeholder="Juan Pérez\nMaría López\n..."></textarea>
+    <button onclick="bulkAdd()">Agregar lista</button>
+
+    <!-- day range for export -->
+    <label for="diaInicio">Desde día</label>
+    <select id="diaInicio"></select>
+    <label for="diaFin">Hasta día</label>
+    <select id="diaFin"></select>
+
+    <!-- yearly summary -->
+    <button onclick="resumenAnual()">Resumen anual</button>
+
+    <!-- search across cursos -->
+    <label for="searchInput">Buscar estudiante (nombre o apellido)</label>
+    <input id="searchInput" placeholder="Escribe un nombre o apellido">
+    <button onclick="searchStudent()">Buscar</button>
+    <div id="searchResults" class="message info" style="display:none; text-align:left; margin-top:10px;"></div>
+
+<div class="botones">
+
+<button onclick="guardar()">Guardar</button>
+<button onclick="cargar()">Cargar</button>
+<button onclick="exportar()">Exportar Excel</button>
+<button onclick="clearTable()">Limpiar tabla</button>
+
+</div>
+
+</div>
+
+
+<div class="tabla-container">
+
+<table id="tabla">
+
+<tr>
+<th>#</th>
+<th>Nombre</th>
+<th>Estado</th>
+<th>Acciones</th>
+</tr>
+
+</table>
+
+</div>
+
+</div>
+
+<script src="script.js" defer></script>
+
+</body>
+</html>
