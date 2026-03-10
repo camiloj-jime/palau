@@ -6,7 +6,6 @@
 
 <link rel="stylesheet" href="style.css">
 
-
 </head>
 
 <body>
@@ -17,17 +16,17 @@
 
 <div class="login" id="login">
 
-    <h2>Acceso Profesores</h2>
+<h2>Acceso Profesores</h2>
 
-    <label for="usuario">Usuario</label>
-    <input id="usuario" placeholder="Usuario">
-    <label for="clave">Contraseña</label>
-    <input id="clave" type="password" placeholder="Contraseña">
+<label>Usuario</label>
+<input id="usuario" placeholder="Usuario">
 
-    <button onclick="login()">Ingresar</button>
+<label>Contraseña</label>
+<input id="clave" type="password" placeholder="Contraseña">
+
+<button onclick="login()">Ingresar</button>
 
 </div>
-
 
 <div class="panel" id="panel">
 
@@ -50,14 +49,13 @@
 
 </div>
 
-
 <div class="controles">
 
-    <label for="anio">Año</label>
-    <select id="anio"></select>
+<label>Año</label>
+<select id="anio"></select>
 
-    <label for="mes">Mes</label>
-    <select id="mes">
+<label>Mes</label>
+<select id="mes">
 <option>Enero</option>
 <option>Febrero</option>
 <option>Marzo</option>
@@ -72,8 +70,8 @@
 <option>Diciembre</option>
 </select>
 
-    <label for="salon">Salón</label>
-    <select id="salon">
+<label>Salón</label>
+<select id="salon">
 
 <option>Prescolar</option>
 <option>1</option>
@@ -96,42 +94,25 @@
 
 </select>
 
-<label for="nombreEstudiante">Nombre del estudiante</label>
-    <input id="nombreEstudiante" placeholder="Nombre del estudiante">
+<label>Nombre del estudiante</label>
+<input id="nombreEstudiante" placeholder="Nombre del estudiante">
 
-    <button onclick="agregar()">Agregar</button>
+<button onclick="agregar()">Agregar</button>
 
-    <!-- bulk addition -->
-    <label for="listaEstudiantes">Lista de nombres (una por línea)</label>
-    <textarea id="listaEstudiantes" rows="4" placeholder="Juan Pérez\nMaría López\n..."></textarea>
-    <button onclick="bulkAdd()">Agregar lista</button>
-
-    <!-- day range for export -->
-    <label for="diaInicio">Desde día</label>
-    <select id="diaInicio"></select>
-    <label for="diaFin">Hasta día</label>
-    <select id="diaFin"></select>
-
-    <!-- yearly summary -->
-    <button onclick="resumenAnual()">Resumen anual</button>
-
-    <!-- search across cursos -->
-    <label for="searchInput">Buscar estudiante (nombre o apellido)</label>
-    <input id="searchInput" placeholder="Escribe un nombre o apellido">
-    <button onclick="searchStudent()">Buscar</button>
-    <div id="searchResults" class="message info" style="display:none; text-align:left; margin-top:10px;"></div>
+<label>Lista de nombres</label>
+<textarea id="listaEstudiantes" rows="4"></textarea>
+<button onclick="bulkAdd()">Agregar lista</button>
 
 <div class="botones">
 
 <button onclick="guardar()">Guardar</button>
-<button onclick="cargar()">Cargar</button>
+<button onclick="irObservaciones()">Observaciones</button>
 <button onclick="exportar()">Exportar Excel</button>
 <button onclick="clearTable()">Limpiar tabla</button>
 
 </div>
 
 </div>
-
 
 <div class="tabla-container">
 
@@ -150,7 +131,15 @@
 
 </div>
 
-<script src="script.js" defer></script>
+<script>
+
+function irObservaciones(){
+window.location.href="asistencia_observaciones.html";
+}
+
+</script>
+
+<script src="script.js"></script>
 
 </body>
 </html>
