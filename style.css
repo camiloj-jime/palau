@@ -330,12 +330,68 @@ table tr:hover{
 }
 
 .estado{
-    padding:8px;
-    border-radius:4px;
-    border:1px solid #ccc;
+    padding:2px;
+    border-radius:2px;
+    border:1px solid #999;
+    font-weight:bold;
+    width:100%;
+    min-width:45px;
+    cursor:pointer;
+    font-size:9px;
+    height:20px;
+}
+
+/* CONTENEDOR ESTADO */
+
+.estado-container{
+    position:relative;
+    display:inline-block;
+    width:100%;
+}
+
+.estado-label{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    pointer-events:none;
+    font-weight:bold;
+    font-size:9px;
+    padding:0 2px;
+    z-index:2;
+    background:white;
+    padding:1px 2px;
+    border-radius:2px;
+}
+
+.estado-container select{
+    background:transparent !important;
+    color:transparent !important;
+    padding:2px;
+    border-radius:2px;
+    border:1px solid #999;
     font-weight:bold;
     width:100%;
     cursor:pointer;
+    font-size:9px;
+    height:20px;
+}
+
+.estado-container select:hover{
+    border-color:#2563eb;
+}
+
+.estado-container select:focus{
+    background-color:white !important;
+    color:#333 !important;
+    outline:none;
+    border-color:#2563eb;
+    box-shadow:0 0 5px rgba(37, 99, 235, 0.3);
+}
+
+.estado-container select option{
+    color:#333;
+    background:white;
 }
 
 table button{
