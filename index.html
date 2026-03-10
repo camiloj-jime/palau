@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
 <meta charset="UTF-8">
-<title>Asistencia</title>
-  <title>Colegio Francisco Palau y Quer</title>
+
+<title>Colegio Francisco Palau y Quer - Asistencia</title>
 
 <link rel="stylesheet" href="style.css">
 
@@ -11,9 +13,13 @@
 
 <body>
 
-<header>Sistema Profesional de Asistencia Escolar</header>
+<header>
+<h1>Sistema Profesional de Asistencia Escolar</h1>
+</header>
 
 <div id="message" class="message"></div>
+
+<!-- LOGIN -->
 
 <div class="login" id="login">
 
@@ -29,7 +35,9 @@
 
 </div>
 
-<div class="panel" id="panel">
+<!-- PANEL PRINCIPAL -->
+
+<div class="panel" id="panel" style="display:none;">
 
 <div class="dashboard">
 
@@ -57,6 +65,7 @@
 
 <label>Mes</label>
 <select id="mes">
+
 <option>Enero</option>
 <option>Febrero</option>
 <option>Marzo</option>
@@ -69,9 +78,11 @@
 <option>Octubre</option>
 <option>Noviembre</option>
 <option>Diciembre</option>
+
 </select>
 
 <label>Salón</label>
+
 <select id="salon">
 
 <option>Prescolar</option>
@@ -96,21 +107,26 @@
 </select>
 
 <label>Nombre del estudiante</label>
+
 <input id="nombreEstudiante" placeholder="Nombre del estudiante">
 
 <button onclick="agregar()">Agregar</button>
 
 <label>Lista de nombres</label>
+
 <textarea id="listaEstudiantes" rows="4"></textarea>
+
 <button onclick="bulkAdd()">Agregar lista</button>
 
 <div class="botones">
 
 <button onclick="guardar()">Guardar</button>
-<button onclick="irasistencia_Observaciones()">Observaciones</button>
-<button onclick="exportar()">Exportar Excel</button>
-<button onclick="clearTable()">Limpiar tabla</button>
 
+<button onclick="irObservaciones()">Observaciones</button>
+
+<button onclick="exportar()">Exportar Excel</button>
+
+<button onclick="clearTable()">Limpiar tabla</button>
 
 </div>
 
@@ -136,7 +152,9 @@
 <script>
 
 function irObservaciones(){
+
 window.location.href="asistencia_observaciones.html";
+
 }
 
 </script>
@@ -144,4 +162,5 @@ window.location.href="asistencia_observaciones.html";
 <script src="script.js"></script>
 
 </body>
+
 </html>
