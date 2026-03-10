@@ -310,6 +310,234 @@ function volverAsistenciaConSesion() {
     window.location.href = "index.html";
 }
 
+function bulkAdd() {
+    const lista = document.getElementById("listaEstudiantes").value.trim();
+    
+    if (!lista) {
+        alert("Por favor escribe los nombres en la lista");
+        return;
+    }
+    
+    const nombres = lista.split('\n').filter(n => n.trim().length > 0);
+    
+    if (nombres.length === 0) {
+        alert("No hay nombres válidos para agregar");
+        return;
+    }
+    
+    nombres.forEach(nombre => {
+        document.getElementById("nombreEstudiante").value = nombre.trim();
+        agregar();
+    });
+    
+    document.getElementById("listaEstudiantes").value = "";
+    alert(`Se agregaron ${nombres.length} estudiantes`);
+}
+
+function guardar() {
+    autoSave();
+    alert("Datos guardados correctamente");
+}
+
+function exportar() {
+    const salon = document.getElementById("salon").value;
+    const mes = document.getElementById("mes").value;
+    const anio = document.getElementById("anio").value;
+    
+    let csv = "Salón: " + salon + "\nMes: " + mes + "\nAño: " + anio + "\n\n";
+    csv += "Nombre,";
+    
+    for (let d = 1; d <= currentDaysCount(); d++) {
+        csv += d + ",";
+    }
+    csv += "\n";
+    
+    for (let i = 1; i < tabla.rows.length; i++) {
+        const nombre = tabla.rows[i].cells[1].innerText;
+        csv += nombre + ",";
+        
+        for (let d = 2; d < tabla.rows[i].cells.length - 1; d++) {
+            const estado = tabla.rows[i].cells[d].querySelector("select").value;
+            csv += estado + ",";
+        }
+        csv += "\n";
+    }
+    
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `asistencia_${salon}_${mes}_${anio}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function clearTable() {
+    if (confirm("¿Estás seguro de que quieres limpiar toda la tabla?")) {
+        buildHeaders();
+        contador = 0;
+        actualizar();
+        autoSave();
+    }
+}
+
+function eliminarTodosCurso() {
+    const salon = document.getElementById("salon").value;
+    
+    if (!salon) {
+        alert("Por favor selecciona un salón primero");
+        return;
+    }
+    
+    if (confirm(`¿Estás seguro de que quieres eliminar TODOS los estudiantes del ${salon}?`)) {
+        const key = clave();
+        localStorage.removeItem(key);
+        buildHeaders();
+        contador = 0;
+        actualizar();
+        alert(`Se han eliminado todos los estudiantes del ${salon}`);
+    }
+}
+
+// FUNCIONES PARA OBSERVACIONES
+function guardarObservacion() {
+    const estudiante = document.getElementById("obsEstudiante").value.trim();
+    const grado = document.getElementById("obsGrado").value.trim();
+    const fecha = document.getElementById("obsFecha").value;
+    const docente = document.getElementById("obsDocente").value.trim();
+    const desempeno = document.getElementById("obsDesempeno").value.trim();
+    const llamados = document.getElementById("obsLlamados").value.trim();
+    const anotaciones = document.getElementById("obsAnotaciones").value.trim();
+    const acciones = document.getElementById("obsAcciones").value.trim();
+    const ficha = document.getElementById("obsFicha").value.trim();
+    const sanciones = document.getElementById("obsSanciones").value.trim();
+    const compromiso = document.getElementById("obsCompromiso").value.trim();
+    const observaciones = document.getElementById("obsObservaciones").value.trim();
+    
+    if (!estudiante || !fecha) {
+        alert("Por favor completa al menos el nombre del estudiante y la fecha");
+        return;
+    }
+    
+    const observacion = {
+        estudiante, grado, fecha, docente, desempeno, llamados, 
+        anotaciones, acciones, ficha, sanciones, compromiso, observaciones,
+        id: Date.now()
+    };
+    
+    let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    observaciones_list.push(observacion);
+    localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
+    
+    alert("Observación guardada correctamente");
+    
+    document.getElementById("obsEstudiante").value = "";
+    document.getElementById("obsGrado").value = "";
+    document.getElementById("obsFecha").value = "";
+    document.getElementById("obsDocente").value = "";
+    document.getElementById("obsDesempeno").value = "";
+    document.getElementById("obsLlamados").value = "";
+    document.getElementById("obsAnotaciones").value = "";
+    document.getElementById("obsAcciones").value = "";
+    document.getElementById("obsFicha").value = "";
+    document.getElementById("obsSanciones").value = "";
+    document.getElementById("obsCompromiso").value = "";
+    document.getElementById("obsObservaciones").value = "";
+    
+    cargarObservaciones();
+}
+
+function cargarObservaciones() {
+    const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    const listaDiv = document.getElementById("listaObservaciones");
+    
+    if (observaciones_list.length === 0) {
+        listaDiv.innerHTML = "<p>No hay observaciones registradas</p>";
+        return;
+    }
+    
+    let html = "<table style='width:100%; border-collapse: collapse;'>";
+    html += "<tr style='background: #2563eb; color: white;'>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Estudiante</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Grado</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Fecha</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Docente</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Observación</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Acción</th>";
+    html += "</tr>";
+    
+    observaciones_list.forEach(obs => {
+        html += "<tr style='background: #f9f9f9;'>";
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.estudiante}</td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.grado}</td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'>${formatearFecha(obs.fecha)}</td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.docente}</td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px; max-width: 200px;'>${obs.observaciones || obs.desempeno}</td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'><button onclick="eliminarObservacion(${obs.id})" style='background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;'>Eliminar</button></td>`;
+        html += "</tr>";
+    });
+    
+    html += "</table>";
+    listaDiv.innerHTML = html;
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return "";
+    const date = new Date(fecha + "T00:00:00");
+    return date.toLocaleDateString("es-ES");
+}
+
+function eliminarObservacion(id) {
+    if (confirm("¿Estás seguro de que quieres eliminar esta observación?")) {
+        let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+        observaciones_list = observaciones_list.filter(obs => obs.id !== id);
+        localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
+        cargarObservaciones();
+    }
+}
+
+function exportarObservaciones() {
+    const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    
+    if (observaciones_list.length === 0) {
+        alert("No hay observaciones para exportar");
+        return;
+    }
+    
+    let csv = "Estudiante,Grado,Fecha,Docente,Desempeño,Llamados de atención,Anotaciones,Acciones restaurativas,Ficha,Sanciones,Compromiso de convivencia,Observaciones\n";
+    
+    observaciones_list.forEach(obs => {
+        const fecha = formatearFecha(obs.fecha);
+        csv += `"${obs.estudiante}","${obs.grado}","${fecha}","${obs.docente}","${obs.desempeno}","${obs.llamados}","${obs.anotaciones}","${obs.acciones}","${obs.ficha}","${obs.sanciones}","${obs.compromiso}","${obs.observaciones}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `observaciones_${new Date().toLocaleDateString()}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function mostrarConteoCurso() {
+    const curso = document.getElementById("searchCurso").value;
+    
+    if (!curso) {
+        alert("Por favor selecciona un curso");
+        return;
+    }
+    
+    const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    const conteo = observaciones_list.filter(obs => obs.grado === curso).length;
+    
+    const conteDiv = document.getElementById("conteoCurso");
+    conteDiv.textContent = `Observaciones en ${curso}: ${conteo}`;
+    conteDiv.style.display = "block";
+}
+
 ["anio","mes","salon"].forEach(id=>{
 
 document.getElementById(id).addEventListener("change",()=>{
@@ -335,3 +563,4 @@ anio.appendChild(op);
 buildHeaders();
 verificarSesion();
 })();
+
