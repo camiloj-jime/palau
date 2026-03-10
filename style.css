@@ -167,6 +167,14 @@ button:hover{
     background:#4b5563;
 }
 
+.btn-delete{
+    background:#ef4444;
+}
+
+.btn-delete:hover{
+    background:#dc2626;
+}
+
 /* PANEL */
 
 .panel{
