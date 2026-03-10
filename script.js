@@ -22,7 +22,7 @@ function getStateColor(code) {
 function createSelectOptions() {
     let html = '<option value="">-</option>';
     Object.keys(estadosConfig).forEach(code => {
-        html += `<option value="${code}">${code}</option>`;
+        html += `<option value="${code}" data-code="${code}">${estadosConfig[code].label}</option>`;
     });
     return html;
 }
@@ -81,9 +81,12 @@ function agregar() {
         const celda = fila.insertCell();
 
         celda.innerHTML = `
-        <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
-        ${createSelectOptions()}
-        </select>
+        <div class="estado-container">
+            <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+            ${createSelectOptions()}
+            </select>
+            <span class="estado-label">-</span>
+        </div>
         `;
     }
 
@@ -123,9 +126,21 @@ function renumerar() {
 function actualizarColor(select) {
 
     const color = getStateColor(select.value);
+    const codigo = select.value;
+    const label = estadosConfig[codigo]?.label || "-";
 
     select.style.background = color;
     select.style.color = "white";
+    select.title = label;
+    
+    // Actualizar el label visual con solo las iniciales
+    const container = select.parentElement;
+    const labelSpan = container.querySelector('.estado-label');
+    if (labelSpan) {
+        labelSpan.textContent = codigo || "-";
+        labelSpan.style.background = color;
+        labelSpan.style.color = "white";
+    }
 }
 
 function actualizar() {
@@ -215,9 +230,12 @@ function cargarSilent() {
             const celda = fila.insertCell();
 
             celda.innerHTML = `
-            <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
-            ${createSelectOptions()}
-            </select>
+            <div class="estado-container">
+                <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+                ${createSelectOptions()}
+                </select>
+                <span class="estado-label">-</span>
+            </div>
             `;
 
             const select = celda.querySelector("select");
@@ -341,37 +359,110 @@ function guardar() {
 
 function exportar() {
     const salon = document.getElementById("salon").value;
-    const mes = document.getElementById("mes").value;
+    const mesIndex = document.getElementById("mes").selectedIndex;
+    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const mesNombre = meses[mesIndex];
     const anio = document.getElementById("anio").value;
     
-    let csv = "Salón: " + salon + "\nMes: " + mes + "\nAño: " + anio + "\n\n";
-    csv += "Nombre,";
+    let html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistencia ${mesNombre} ${anio}</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body { font-family: Arial, Calibri, sans-serif; background: white; }
+        .no-print { display: block; padding: 20px; text-align: center; background: #f0f0f0; border-bottom: 2px solid #333; }
+        .no-print button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .no-print button:hover { background: #1d4ed8; }
+        .content { padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { margin: 10px 0; color: #1e3a8a; font-size: 18px; font-weight: bold; }
+        .header p { margin: 5px 0; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #000; padding: 10px; text-align: center; font-size: 11px; }
+        th { background-color: #2563eb; color: white; font-weight: bold; height: 25px; }
+        td { height: 25px; }
+        .nombre-col { text-align: left; }
+        .numero-col { width: 30px; }
+        .leyenda { margin-top: 50px; page-break-before: avoid; }
+        .leyenda h3 { color: #1e3a8a; font-size: 12px; margin: 10px 0 8px 0; border-bottom: 1px solid #2563eb; padding-bottom: 3px; }
+        .leyenda-items { display: flex; flex-wrap: wrap; gap: 15px; font-size: 9px; line-height: 1.4; }
+        .leyenda-item { display: inline-block; }
+        .pie { margin-top: 20px; font-size: 10px; text-align: center; color: #999; }
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; }
+            .content { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.print()">🖨️ IMPRIMIR</button>
+    </div>
+    <div class="content">
+        <div class="header">
+            <h2>ASISTENCIA COLEGIO FRANCISCO PALAU Y QUER</h2>
+            <p><strong>Mes:</strong> ${mesNombre} | <strong>Año:</strong> ${anio} | <strong>Salón:</strong> ${salon}</p>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th class="numero-col">#</th>
+                    <th>Nombre del Estudiante</th>`;
     
     for (let d = 1; d <= currentDaysCount(); d++) {
-        csv += d + ",";
+        html += `<th>${d}</th>`;
     }
-    csv += "\n";
+    
+    html += `</tr>
+            </thead>
+            <tbody>`;
     
     for (let i = 1; i < tabla.rows.length; i++) {
         const nombre = tabla.rows[i].cells[1].innerText;
-        csv += nombre + ",";
+        html += `<tr><td class="numero-col">${i}</td><td class="nombre-col">${nombre}</td>`;
         
         for (let d = 2; d < tabla.rows[i].cells.length - 1; d++) {
-            const estado = tabla.rows[i].cells[d].querySelector("select").value;
-            csv += estado + ",";
+            const estado = tabla.rows[i].cells[d].querySelector("select")?.value || "";
+            html += `<td>${estado}</td>`;
         }
-        csv += "\n";
+        
+        html += `</tr>`;
     }
     
-    const blob = new Blob([csv], { type: "text/csv" });
+    html += `</tbody>
+        </table>
+        <div class="leyenda">
+            <h3>LEYENDA DE ESTADOS</h3>
+            <div class="leyenda-items">`;
+    
+    // Agregar la leyenda de estados en línea
+    Object.keys(estadosConfig).forEach(code => {
+        const config = estadosConfig[code];
+        const bgColor = config.color;
+        html += `<span class="leyenda-item"><strong style="color: ${bgColor};">${code}</strong>=${config.label}</span>`;
+    });
+    
+    html += `</div>
+        </div>
+        <div class="pie">
+            <p>Documento generado automáticamente - Colegio Francisco Palau y Quer</p>
+        </div>
+    </div>
+</body>
+</html>`;
+    
+    const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `asistencia_${salon}_${mes}_${anio}.csv`;
+    a.download = `asistencia_${salon}_${mesNombre}_${anio}.html`;
     a.click();
     window.URL.revokeObjectURL(url);
 }
-
 function clearTable() {
     if (confirm("¿Estás seguro de que quieres limpiar toda la tabla?")) {
         buildHeaders();
@@ -462,7 +553,9 @@ function cargarObservaciones() {
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Grado</th>";
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Fecha</th>";
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Docente</th>";
-    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Observación</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Desempeño</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Llamados</th>";
+    html += "<th style='border: 1px solid #ddd; padding: 8px;'>Observaciones</th>";
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Acción</th>";
     html += "</tr>";
     
@@ -472,7 +565,10 @@ function cargarObservaciones() {
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.grado}</td>`;
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${formatearFecha(obs.fecha)}</td>`;
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.docente}</td>`;
-        html += `<td style='border: 1px solid #ddd; padding: 8px; max-width: 200px;'>${obs.observaciones || obs.desempeno}</td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.desempeno}</td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.llamados}</td>`;
+        const obsText = obs.observaciones || obs.anotaciones || obs.acciones || obs.ficha || obs.sanciones || obs.compromiso || "-";
+        html += `<td style='border: 1px solid #ddd; padding: 8px; max-width: 300px;'>${obsText}</td>`;
         html += `<td style='border: 1px solid #ddd; padding: 8px;'><button onclick="eliminarObservacion(${obs.id})" style='background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;'>Eliminar</button></td>`;
         html += "</tr>";
     });
@@ -497,28 +593,121 @@ function eliminarObservacion(id) {
 }
 
 function exportarObservaciones() {
+
     const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
-    
+
     if (observaciones_list.length === 0) {
+
         alert("No hay observaciones para exportar");
+
         return;
     }
-    
-    let csv = "Estudiante,Grado,Fecha,Docente,Desempeño,Llamados de atención,Anotaciones,Acciones restaurativas,Ficha,Sanciones,Compromiso de convivencia,Observaciones\n";
-    
+
+    const ahora = new Date();
+
+    const mesNombre = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][ahora.getMonth()];
+
+    const anioActual = ahora.getFullYear();
+
+    let html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observaciones ${mesNombre} ${anioActual}</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body { font-family: Arial, Calibri, sans-serif; background: white; }
+        .no-print { display: block; padding: 20px; text-align: center; background: #f0f0f0; border-bottom: 2px solid #333; }
+        .no-print button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .no-print button:hover { background: #1d4ed8; }
+        .content { padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { margin: 10px 0; color: #1e3a8a; font-size: 18px; font-weight: bold; }
+        .header p { margin: 5px 0; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 11px; }
+        th { background-color: #2563eb; color: white; font-weight: bold; height: 25px; }
+        td { padding: 8px; }
+        .pie { margin-top: 20px; font-size: 10px; text-align: center; color: #999; }
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; }
+            .content { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.print()">🖨️ IMPRIMIR</button>
+    </div>
+    <div class="content">
+        <div class="header">
+            <h2>OBSERVACIONES COLEGIO FRANCISCO PALAU Y QUER</h2>
+            <p><strong>Mes:</strong> ${mesNombre} | <strong>Año:</strong> ${anioActual}</p>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Estudiante</th>
+                    <th>Grado</th>
+                    <th>Fecha</th>
+                    <th>Docente</th>
+                    <th>Desempeño</th>
+                    <th>Llamados</th>
+                    <th>Anotaciones</th>
+                    <th>Acciones</th>
+                    <th>Ficha</th>
+                    <th>Sanciones</th>
+                    <th>Compromiso</th>
+                    <th>Observaciones</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
     observaciones_list.forEach(obs => {
         const fecha = formatearFecha(obs.fecha);
-        csv += `"${obs.estudiante}","${obs.grado}","${fecha}","${obs.docente}","${obs.desempeno}","${obs.llamados}","${obs.anotaciones}","${obs.acciones}","${obs.ficha}","${obs.sanciones}","${obs.compromiso}","${obs.observaciones}"\n`;
+        html += `<tr>
+                    <td>${obs.estudiante}</td>
+                    <td>${obs.grado}</td>
+                    <td>${fecha}</td>
+                    <td>${obs.docente}</td>
+                    <td>${obs.desempeno}</td>
+                    <td>${obs.llamados}</td>
+                    <td>${obs.anotaciones}</td>
+                    <td>${obs.acciones}</td>
+                    <td>${obs.ficha}</td>
+                    <td>${obs.sanciones}</td>
+                    <td>${obs.compromiso}</td>
+                    <td>${obs.observaciones}</td>
+                </tr>`;
     });
-    
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+
+    html += `</tbody>
+        </table>
+        <div class="pie">
+            <p>Documento generado automáticamente - Colegio Francisco Palau y Quer</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+
     const link = document.createElement("a");
+
     const url = URL.createObjectURL(blob);
+
     link.setAttribute("href", url);
-    link.setAttribute("download", `observaciones_${new Date().toLocaleDateString()}.csv`);
+
+    link.setAttribute("download", `observaciones_${mesNombre}_${anioActual}.html`);
+
     link.style.visibility = "hidden";
+
     document.body.appendChild(link);
+
     link.click();
+
     document.body.removeChild(link);
 }
 
