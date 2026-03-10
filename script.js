@@ -38,10 +38,26 @@ function login() {
     const acceso = usuarios.some(x => x.user === u && x.pass === p);
 
     if (acceso) {
+        sessionStorage.setItem("usuarioLogueado", u);
         document.getElementById("login").style.display = "none";
         document.getElementById("panel").style.display = "block";
     } else {
         alert("Datos incorrectos");
+    }
+}
+
+function logout() {
+    sessionStorage.removeItem("usuarioLogueado");
+    document.getElementById("login").style.display = "block";
+    document.getElementById("panel").style.display = "none";
+    document.getElementById("usuario").value = "";
+    document.getElementById("clave").value = "";
+}
+
+function verificarSesion() {
+    if (sessionStorage.getItem("usuarioLogueado")) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("panel").style.display = "block";
     }
 }
 
@@ -249,9 +265,49 @@ function buildHeaders() {
 }
 
 function abrirObservaciones(){
-
 window.location.href="asistencia_observaciones.html";
+}
 
+function filtrarEstudiantesAsistencia() {
+    const input = document.getElementById("nombreEstudiante");
+    const filtro = input.value.toLowerCase();
+    const sugerenciasDiv = document.getElementById("sugerenciasEstudiantes");
+    
+    if (filtro.length === 0) {
+        sugerenciasDiv.innerHTML = "";
+        sugerenciasDiv.style.display = "none";
+        return;
+    }
+    
+    const estudiantes = [];
+    for (let i = 1; i < tabla.rows.length; i++) {
+        const nombre = tabla.rows[i].cells[1].innerText.toLowerCase();
+        if (nombre.includes(filtro)) {
+            estudiantes.push(tabla.rows[i].cells[1].innerText);
+        }
+    }
+    
+    if (estudiantes.length === 0) {
+        sugerenciasDiv.style.display = "none";
+        return;
+    }
+    
+    let html = "";
+    estudiantes.forEach(est => {
+        html += `<div class="sugerencia" onclick="seleccionarEstudiante('${est}')">${est}</div>`;
+    });
+    
+    sugerenciasDiv.innerHTML = html;
+    sugerenciasDiv.style.display = "block";
+}
+
+function seleccionarEstudiante(nombre) {
+    document.getElementById("nombreEstudiante").value = nombre;
+    document.getElementById("sugerenciasEstudiantes").innerHTML = "";
+}
+
+function volverAsistenciaConSesion() {
+    window.location.href = "index.html";
 }
 
 ["anio","mes","salon"].forEach(id=>{
@@ -267,25 +323,15 @@ cargarSilent();
 });
 
 (function(){
-
 const anio=document.getElementById("anio");
-
 const actual=new Date().getFullYear();
-
 for(let i=2024;i<=2035;i++){
-
 const op=document.createElement("option");
-
 op.value=i;
-
 op.text=i;
-
 if(i===actual)op.selected=true;
-
 anio.appendChild(op);
-
 }
-
 buildHeaders();
-
+verificarSesion();
 })();

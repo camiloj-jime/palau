@@ -2,20 +2,17 @@
 <html lang="es">
 
 <head>
-
 <meta charset="UTF-8">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Colegio Francisco Palau y Quer - Asistencia</title>
-
 <link rel="stylesheet" href="style.css">
-
 </head>
 
 <body>
-
 <header>
+<img src="logo.jpg" alt="Logo" class="logo">
 <h1>Asistencia Escolar</h1>
-  <h1>Colegio Francisco Palau y Quer</h1>
+<p>Colegio Francisco Palau y Quer</p>
 </header>
 
 <div id="message" class="message"></div>
@@ -109,7 +106,10 @@
 
 <label>Nombre del estudiante</label>
 
-<input id="nombreEstudiante" placeholder="Nombre del estudiante">
+<div class="busqueda-container">
+<input id="nombreEstudiante" placeholder="Nombre del estudiante" onkeyup="filtrarEstudiantesAsistencia()">
+<div id="sugerenciasEstudiantes"></div>
+</div>
 
 <button onclick="agregar()">Agregar</button>
 
@@ -119,16 +119,12 @@
 
 <button onclick="bulkAdd()">Agregar lista</button>
 
-<div class="botones">
-
-<button onclick="guardar()">Guardar</button>
-
-<button onclick="irObservaciones()">Observaciones</button>
-
-<button onclick="exportar()">Exportar Excel</button>
-
-<button onclick="clearTable()">Limpiar tabla</button>
-
+<div class="botones-grid">
+<button onclick="guardar()" class="btn-primary">Guardar</button>
+<button onclick="abrirObservaciones()" class="btn-secondary">Observaciones</button>
+<button onclick="exportar()" class="btn-info">Exportar Excel</button>
+<button onclick="clearTable()" class="btn-danger">Limpiar tabla</button>
+<button onclick="logout()" class="btn-logout">Cerrar sesión</button>
 </div>
 
 </div>
@@ -150,18 +146,6 @@
 
 </div>
 
-<script>
-
-function irObservaciones(){
-
-window.location.href="asistencia_observaciones.html";
-
-}
-
-</script>
-
 <script src="script.js"></script>
-
 </body>
-
 </html>

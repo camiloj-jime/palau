@@ -2,39 +2,50 @@
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family:Segoe UI,Arial;
+    font-family:Segoe UI, Arial, sans-serif;
 }
 
 body{
     background:#f4f6fb;
+    padding:10px;
 }
 
 /* HEADER */
 
 header{
-    background:linear-gradient(90deg,#1e3a8a,#2563eb);
+    background:linear-gradient(90deg, #1e3a8a, #2563eb);
     color:white;
-    padding:18px;
-    font-size:22px;
-    font-weight:bold;
+    padding:15px;
     text-align:center;
     box-shadow:0 3px 8px rgba(0,0,0,0.2);
+    border-radius:8px;
+    margin-bottom:20px;
+}
+
+header h1{
+    font-size:24px;
+    margin:5px 0;
+}
+
+header p{
+    font-size:14px;
+    opacity:0.9;
+    margin:5px 0;
 }
 
 /* LOGO */
 
 .logo{
-    width:120px;
+    width:80px;
     height:auto;
     display:block;
-    margin:auto;
-    margin-bottom:10px;
+    margin:0 auto 10px;
 }
 
-/* messages */
+/* MESSAGES */
 
 .message{
-    padding:10px;
+    padding:12px;
     margin:10px auto;
     width:90%;
     text-align:center;
@@ -65,7 +76,8 @@ header{
 /* LOGIN */
 
 .login{
-    width:360px;
+    width:100%;
+    max-width:360px;
     margin:80px auto;
     background:white;
     padding:30px;
@@ -76,81 +88,99 @@ header{
 .login h2{
     text-align:center;
     margin-bottom:20px;
+    color:#2563eb;
 }
 
-input,select{
+input, select, textarea{
     width:100%;
-    padding:10px;
+    padding:12px;
     margin-top:10px;
     border-radius:6px;
     border:1px solid #ccc;
+    font-size:14px;
 }
 
-/* BOTONES */
+input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:#2563eb;
+    box-shadow:0 0 5px rgba(37, 99, 235, 0.3);
+}
+
+/* BUTTONS */
 
 button{
-    padding:10px 15px;
+    padding:12px 15px;
     border:none;
     border-radius:6px;
     background:#2563eb;
     color:white;
     cursor:pointer;
     margin-top:10px;
+    width:100%;
+    font-weight:bold;
+    transition:all 0.3s ease;
 }
 
 button:hover{
     background:#1d4ed8;
+    transform:translateY(-2px);
+    box-shadow:0 4px 8px rgba(0,0,0,0.2);
 }
 
-.btn-delete{
-    background:#ef4444;
+.btn-primary{
+    background:#2563eb;
 }
 
-.btn-delete:hover{
-    background:#dc2626;
+.btn-primary:hover{
+    background:#1d4ed8;
 }
 
-/* BOTON OBSERVACIONES */
-
-.btn-observaciones{
+.btn-secondary{
     background:#10b981;
 }
 
-.btn-observaciones:hover{
+.btn-secondary:hover{
     background:#059669;
 }
 
-/* Estado Select */
-
-.estado-select{
-    padding:8px;
-    border-radius:4px;
-    border:none;
-    font-weight:bold;
-    cursor:pointer;
-    width:70px;
-    text-align:center;
+.btn-info{
+    background:#f59e0b;
 }
 
-.estado-select option{
-    padding:5px;
+.btn-info:hover{
+    background:#d97706;
+}
+
+.btn-danger{
+    background:#ef4444;
+}
+
+.btn-danger:hover{
+    background:#dc2626;
+}
+
+.btn-logout{
+    background:#6b7280;
+}
+
+.btn-logout:hover{
+    background:#4b5563;
 }
 
 /* PANEL */
 
 .panel{
-    display:none;
-    width:95%;
-    margin:auto;
-    margin-top:20px;
+    max-width:1200px;
+    margin:0 auto;
+    padding:10px;
 }
 
 /* DASHBOARD */
 
 .dashboard{
-    display:flex;
-    gap:20px;
-    flex-wrap:wrap;
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:15px;
     margin-bottom:20px;
 }
 
@@ -158,13 +188,21 @@ button:hover{
     background:white;
     padding:20px;
     border-radius:10px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
-    flex:1;
-    min-width:200px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    text-align:center;
 }
 
 .card h3{
+    color:#666;
+    font-size:13px;
     margin-bottom:10px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+
+.card p{
+    font-size:28px;
+    font-weight:bold;
     color:#2563eb;
 }
 
@@ -174,11 +212,79 @@ button:hover{
     background:white;
     padding:20px;
     border-radius:10px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
     margin-bottom:20px;
-    display:flex;
-    flex-wrap:wrap;
+}
+
+.controles label{
+    display:block;
+    font-weight:bold;
+    margin-top:10px;
+    margin-bottom:5px;
+    color:#333;
+    font-size:14px;
+}
+
+.controles select, .controles input{
+    margin-bottom:15px;
+}
+
+/* BUSQUEDA */
+
+.busqueda-container{
+    position:relative;
+    margin-bottom:15px;
+}
+
+#nombreEstudiante{
+    width:100%;
+    padding:12px;
+    margin-top:0;
+}
+
+#sugerenciasEstudiantes{
+    position:absolute;
+    top:100%;
+    left:0;
+    right:0;
+    background:white;
+    border:1px solid #2563eb;
+    border-top:none;
+    border-radius:0 0 6px 6px;
+    max-height:200px;
+    overflow-y:auto;
+    z-index:1000;
+    display:none;
+    box-shadow:0 4px 6px rgba(0,0,0,0.1);
+}
+
+.sugerencia{
+    padding:10px;
+    cursor:pointer;
+    border-bottom:1px solid #eee;
+    transition:background 0.2s;
+}
+
+.sugerencia:hover{
+    background:#f0f0f0;
+}
+
+.sugerencia:last-child{
+    border-bottom:none;
+}
+
+/* BOTONES GRID */
+
+.botones-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
     gap:10px;
+    margin-top:15px;
+}
+
+.botones-grid button{
+    margin:0;
+    width:100%;
 }
 
 /* TABLA */
@@ -187,77 +293,193 @@ button:hover{
     background:white;
     padding:20px;
     border-radius:10px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
     overflow-x:auto;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
-    margin-top:10px;
 }
 
-th,td{
-    padding:10px;
-    border-bottom:1px solid #ddd;
-    text-align:center;
-}
-
-th{
+table th{
     background:#2563eb;
     color:white;
+    padding:12px;
+    text-align:left;
+    font-weight:bold;
+    font-size:13px;
 }
 
-tr:hover{
-    background:#f1f5ff;
+table td{
+    padding:12px;
+    border-bottom:1px solid #eee;
+    font-size:13px;
 }
 
-/* BOTONES */
-
-.botones{
-    margin-top:10px;
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
+table tr:hover{
+    background:#f9fafb;
 }
 
-/* Search Results */
-
-#searchResults{
-    background:#f0f4f8;
-    border-left:4px solid #2563eb;
-    padding:15px;
-    border-radius:6px;
-    max-height:300px;
-    overflow-y:auto;
-}
-
-#searchResults div{
+.estado{
     padding:8px;
-    margin:5px 0;
-    background:white;
     border-radius:4px;
-    border-left:3px solid #2563eb;
+    border:1px solid #ccc;
+    font-weight:bold;
+    width:100%;
+    cursor:pointer;
 }
 
-/* RESPONSIVE */
+table button{
+    padding:6px 10px;
+    font-size:12px;
+    width:auto;
+    margin:0;
+}
+
+/* OBSERVACIONES */
+
+#observaciones{
+    max-width:800px;
+    margin:20px auto;
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+#observaciones h3{
+    text-align:center;
+    color:#2563eb;
+    margin-bottom:20px;
+}
+
+#observaciones h4{
+    color:#333;
+    margin-top:20px;
+    margin-bottom:10px;
+    border-bottom:2px solid #2563eb;
+    padding-bottom:5px;
+}
+
+.estudiante-container{
+    position:relative;
+    margin-bottom:15px;
+}
+
+#estudiantesSugerencias{
+    position:absolute;
+    top:100%;
+    left:0;
+    right:0;
+    background:white;
+    border:1px solid #ccc;
+    border-radius:0 0 6px 6px;
+    max-height:200px;
+    overflow-y:auto;
+    z-index:1000;
+}
+
+/* RESPONSIVE DESIGN */
 
 @media (max-width:768px){
+    header{
+        padding:10px;
+    }
 
-.dashboard{
-flex-direction:column;
+    header h1{
+        font-size:18px;
+    }
+
+    header p{
+        font-size:12px;
+    }
+
+    .logo{
+        width:60px;
+        margin-bottom:8px;
+    }
+
+    .dashboard{
+        grid-template-columns:1fr;
+    }
+
+    .controles{
+        padding:15px;
+    }
+
+    .botones-grid{
+        grid-template-columns:1fr;
+    }
+
+    .botones-grid button{
+        padding:10px;
+        font-size:13px;
+    }
+
+    table{
+        font-size:11px;
+    }
+
+    table th, table td{
+        padding:8px 5px;
+    }
+
+    .tabla-container{
+        padding:10px;
+    }
+
+    #observaciones{
+        padding:15px;
+        margin:10px;
+    }
+
+    .login{
+        width:90%;
+        padding:20px;
+    }
+
+    input, select, textarea, button{
+        font-size:16px;
+    }
 }
 
-.controles{
-flex-direction:column;
-}
+@media (max-width:480px){
+    body{
+        padding:5px;
+    }
 
-table{
-font-size:12px;
-}
+    header{
+        padding:8px;
+    }
 
-.login{
-width:90%;
-}
+    header h1{
+        font-size:16px;
+    }
 
+    .logo{
+        width:50px;
+    }
+
+    .card p{
+        font-size:20px;
+    }
+
+    table{
+        font-size:10px;
+    }
+
+    table th, table td{
+        padding:5px;
+    }
+
+    button{
+        padding:10px 8px;
+        font-size:12px;
+    }
+
+    .botones-grid{
+        grid-template-columns:1fr;
+        gap:8px;
+    }
 }
