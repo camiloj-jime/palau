@@ -15,6 +15,9 @@ const estadosConfig = {
     "IET": { label: "Excusa telefónica", color: "#ec4899" }
 };
 
+let tabla = null;
+let contador = 0;
+
 function getStateColor(code) {
     return estadosConfig[code]?.color || "#ffffff";
 }
@@ -26,9 +29,6 @@ function createSelectOptions() {
     });
     return html;
 }
-
-const tabla = document.getElementById("tabla");
-let contador = 0;
 
 function login() {
 
@@ -62,6 +62,11 @@ function verificarSesion() {
 }
 
 function agregar() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) {
+        alert("Error: tabla no encontrada");
+        return;
+    }
 
     const nombre = document.getElementById("nombreEstudiante").value.trim();
 
@@ -98,9 +103,60 @@ function agregar() {
 
     actualizar();
     autoSave();
+    guardarEstudiante(nombre, "6A");
+}
+async function guardarDatos(){
+    try {
+        await window.addDoc(window.collection(window.db, "mensajes"), {
+            nombre: document.getElementById("nombre").value,
+            mensaje: document.getElementById("mensaje").value,
+            fecha: new Date()
+        });
+        alert("Datos guardados correctamente en Firebase");
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("Error al guardar los datos");
+    }
+}
+
+async function guardarEstudiante(nombre, grado) {
+    try {
+        await window.addDoc(window.collection(window.db, "estudiantes"), {
+            nombre: nombre,
+            grado: grado,
+            fechaRegistro: new Date()
+        });
+        alert("Estudiante guardado correctamente en Firebase");
+    } catch (error) {
+        console.error("Error al guardar estudiante:", error);
+        alert("Error al guardar el estudiante");
+    }
+}
+
+async function cargarEstudiantes() {
+    try {
+        const querySnapshot = await window.getDocs(window.collection(window.db, "estudiantes"));
+        const estudiantes = [];
+        
+        querySnapshot.forEach((doc) => {
+            estudiantes.push({
+                id: doc.id,
+                ...doc.data()
+            });
+            console.log("Estudiante:", doc.data());
+        });
+        
+        return estudiantes;
+    } catch (error) {
+        console.error("Error al cargar estudiantes:", error);
+        alert("Error al cargar los estudiantes");
+        return [];
+    }
 }
 
 function eliminarFila(btn) {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
 
     const fila = btn.parentNode.parentNode;
 
@@ -114,6 +170,8 @@ function eliminarFila(btn) {
 }
 
 function renumerar() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
 
     for (let i = 1; i < tabla.rows.length; i++) {
 
@@ -144,6 +202,8 @@ function actualizarColor(select) {
 }
 
 function actualizar() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
 
     let ausentes = 0;
     let presentes = 0;
@@ -177,6 +237,8 @@ function clave() {
 }
 
 function autoSave() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
 
     const key = clave();
 
@@ -204,6 +266,8 @@ function autoSave() {
 }
 
 function cargarSilent() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
 
     const key = clave();
 
@@ -265,6 +329,8 @@ function currentDaysCount() {
 }
 
 function buildHeaders() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
 
     const days = currentDaysCount();
 
@@ -287,6 +353,9 @@ window.location.href="asistencia_observaciones.html";
 }
 
 function filtrarEstudiantesAsistencia() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
+
     const input = document.getElementById("nombreEstudiante");
     const filtro = input.value.toLowerCase();
     const sugerenciasDiv = document.getElementById("sugerenciasEstudiantes");
@@ -358,6 +427,12 @@ function guardar() {
 }
 
 function exportar() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) {
+        alert("Error: tabla no encontrada");
+        return;
+    }
+
     const salon = document.getElementById("salon").value;
     const mesIndex = document.getElementById("mes").selectedIndex;
     const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -464,6 +539,9 @@ function exportar() {
     window.URL.revokeObjectURL(url);
 }
 function clearTable() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
+
     if (confirm("¿Estás seguro de que quieres limpiar toda la tabla?")) {
         buildHeaders();
         contador = 0;
@@ -473,6 +551,9 @@ function clearTable() {
 }
 
 function eliminarTodosCurso() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
+
     const salon = document.getElementById("salon").value;
     
     if (!salon) {
@@ -728,29 +809,33 @@ function mostrarConteoCurso() {
 }
 
 ["anio","mes","salon"].forEach(id=>{
-
-document.getElementById(id).addEventListener("change",()=>{
-
-autoSave();
-
-cargarSilent();
-
-})
-
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener("change",()=>{
+            autoSave();
+            cargarSilent();
+        });
+    }
 });
 
 (function(){
-const anio=document.getElementById("anio");
-const actual=new Date().getFullYear();
-for(let i=2024;i<=2035;i++){
-const op=document.createElement("option");
-op.value=i;
-op.text=i;
-if(i===actual)op.selected=true;
-anio.appendChild(op);
-}
-buildHeaders();
-verificarSesion();
+    // Inicializar tabla
+    tabla = document.getElementById("tabla");
+    
+    const anio = document.getElementById("anio");
+    if (anio) {
+        const actual = new Date().getFullYear();
+        for(let i=2024; i<=2035; i++){
+            const op = document.createElement("option");
+            op.value = i;
+            op.text = i;
+            if(i === actual) op.selected = true;
+            anio.appendChild(op);
+        }
+    }
+    
+    buildHeaders();
+    verificarSesion();
 })();
 
 
