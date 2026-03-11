@@ -47,6 +47,12 @@ function login() {
 }
 
 function logout() {
+    // Cancelar listener en tiempo real
+    if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+        unsubscribe = null;
+    }
+    
     sessionStorage.removeItem("usuarioLogueado");
     document.getElementById("login").style.display = "block";
     document.getElementById("panel").style.display = "none";
@@ -283,18 +289,18 @@ async function guardarAsistenciaFirebase(datos) {
         const mes = document.getElementById("mes").value;
         const salon = document.getElementById("salon").value;
         
-        // Crear un documento por grado/mes/año con toda la asistencia
-        const docId = `${anio}-${mes}-${salon}`;
+        // Crear un ID único para este grado/mes/año
+        const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
         
-        // Usar setDoc para reemplazar el documento completo
-        const docRef = window.collection(window.db, "asistencia");
+        // Usar setDoc para actualizar/crear el documento (no addDoc)
+        const docRef = window.doc(window.db, "asistencia", docId);
         
-        await window.addDoc(docRef, {
+        await window.setDoc(docRef, {
             anio: anio,
             mes: mes,
             grado: salon,
             estudiantes: datos,
-            fechaActualizacion: new Date(),
+            fechaActualizacion: new Date().getTime(),
             docId: docId
         });
         
@@ -304,26 +310,59 @@ async function guardarAsistenciaFirebase(datos) {
     }
 }
 
+let unsubscribe = null;
+
+function escucharActualizacionesFirebase() {
+    try {
+        const anio = document.getElementById("anio").value;
+        const mes = document.getElementById("mes").value;
+        const salon = document.getElementById("salon").value;
+        const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
+        
+        // Cancelar escucha anterior si existe
+        if (unsubscribe) {
+            unsubscribe();
+        }
+        
+        // Escuchar cambios en tiempo real
+        const docRef = window.doc(window.db, "asistencia", docId);
+        unsubscribe = window.onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                console.log("Asistencia actualizada en tiempo real:", data);
+                
+                // Recargar la tabla con los nuevos datos si es necesario
+                if (data.estudiantes && data.estudiantes.length > 0) {
+                    cargarEstudiantesEnTabla(data.estudiantes);
+                    actualizar();
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error al configurar escucha de Firebase:", error);
+    }
+}
+
 async function cargarAsistenciaFirebase() {
     try {
         const anio = document.getElementById("anio").value;
         const mes = document.getElementById("mes").value;
         const salon = document.getElementById("salon").value;
         
-        // Buscar los registros de asistencia para este grado
-        const q = window.query(
+        // Crear el mismo ID que se usa para guardar
+        const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
+        
+        // Buscar el documento específico
+        const docRef = window.doc(window.db, "asistencia", docId);
+        const docSnap = await window.getDocs(window.query(
             window.collection(window.db, "asistencia"),
-            window.where("grado", "==", salon)
-        );
+            window.where("docId", "==", docId)
+        ));
         
-        const querySnapshot = await window.getDocs(q);
-        
-        // Filtrar por mes y año en el cliente
-        for (let doc of querySnapshot.docs) {
-            const data = doc.data();
-            if (data.mes === mes && data.anio === anio) {
-                return data.estudiantes;
-            }
+        if (!docSnap.empty) {
+            const data = docSnap.docs[0].data();
+            console.log("Asistencia cargada de Firebase:", data);
+            return data.estudiantes;
         }
         
         return null;
@@ -348,6 +387,7 @@ async function cargarSilent() {
     if (datos && datos.length > 0) {
         cargarEstudiantesEnTabla(datos);
         actualizar();
+        escucharActualizacionesFirebase();
         return;
     }
 
@@ -355,7 +395,10 @@ async function cargarSilent() {
     const datosFirebase = await cargarAsistenciaFirebase();
     if (datosFirebase && datosFirebase.length > 0) {
         cargarEstudiantesEnTabla(datosFirebase);
+        // Guardar en localStorage también
+        localStorage.setItem(key, JSON.stringify(datosFirebase));
         actualizar();
+        escucharActualizacionesFirebase();
         return;
     }
 
@@ -385,6 +428,7 @@ async function cargarSilent() {
         });
 
         actualizar();
+        escucharActualizacionesFirebase();
     }
 }
 
