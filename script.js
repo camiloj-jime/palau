@@ -138,19 +138,22 @@ async function guardarEstudiante(nombre, grado) {
 async function cargarEstudiantes() {
     try {
         const grado = document.getElementById("salon").value;
-        const querySnapshot = await window.getDocs(window.collection(window.db, "estudiantes"));
+        
+        // Usar query con where para filtrar en Firebase directamente
+        const q = window.query(
+            window.collection(window.db, "estudiantes"),
+            window.where("grado", "==", grado)
+        );
+        
+        const querySnapshot = await window.getDocs(q);
         const estudiantes = [];
         
         querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            // Filtrar por grado/curso
-            if (data.grado === grado) {
-                estudiantes.push({
-                    id: doc.id,
-                    ...data
-                });
-                console.log("Estudiante cargado:", data);
-            }
+            estudiantes.push({
+                id: doc.id,
+                ...doc.data()
+            });
+            console.log("Estudiante cargado:", doc.data());
         });
         
         return estudiantes;
@@ -839,6 +842,14 @@ function mostrarConteoCurso() {
     const el = document.getElementById(id);
     if (el) {
         el.addEventListener("change",async ()=>{
+            // Primero limpiar la tabla completamente
+            if (!tabla) tabla = document.getElementById("tabla");
+            if (tabla) {
+                buildHeaders();
+                contador = 0;
+            }
+            
+            // Luego guardar y cargar
             autoSave();
             await cargarSilent();
         });
@@ -865,3 +876,4 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
