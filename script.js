@@ -731,7 +731,7 @@ function mostrarConteoCurso() {
 
 document.getElementById(id).addEventListener("change",()=>{
 
-buildHeaders();
+autoSave();
 
 cargarSilent();
 
@@ -752,4 +752,5 @@ anio.appendChild(op);
 buildHeaders();
 verificarSesion();
 })();
+
 
