@@ -103,7 +103,9 @@ function agregar() {
 
     actualizar();
     autoSave();
-    guardarEstudiante(nombre, "6A");
+    
+    const grado = document.getElementById("salon").value;
+    guardarEstudiante(nombre, grado);
 }
 async function guardarDatos(){
     try {
@@ -135,21 +137,25 @@ async function guardarEstudiante(nombre, grado) {
 
 async function cargarEstudiantes() {
     try {
+        const grado = document.getElementById("salon").value;
         const querySnapshot = await window.getDocs(window.collection(window.db, "estudiantes"));
         const estudiantes = [];
         
         querySnapshot.forEach((doc) => {
-            estudiantes.push({
-                id: doc.id,
-                ...doc.data()
-            });
-            console.log("Estudiante:", doc.data());
+            const data = doc.data();
+            // Filtrar por grado/curso
+            if (data.grado === grado) {
+                estudiantes.push({
+                    id: doc.id,
+                    ...data
+                });
+                console.log("Estudiante cargado:", data);
+            }
         });
         
         return estudiantes;
     } catch (error) {
         console.error("Error al cargar estudiantes:", error);
-        alert("Error al cargar los estudiantes");
         return [];
     }
 }
@@ -265,54 +271,75 @@ function autoSave() {
     localStorage.setItem(key, JSON.stringify(datos));
 }
 
-function cargarSilent() {
+async function cargarSilent() {
     if (!tabla) tabla = document.getElementById("tabla");
     if (!tabla) return;
 
-    const key = clave();
-
-    const datos = JSON.parse(localStorage.getItem(key));
-
-    if (!datos) return;
-
+    // SIEMPRE limpiar la tabla primero
     buildHeaders();
-
     contador = 0;
 
-    datos.forEach(d => {
+    const key = clave();
+    const datos = JSON.parse(localStorage.getItem(key));
 
-        contador++;
+    // Si hay datos en localStorage, usarlos
+    if (datos && datos.length > 0) {
+        datos.forEach(d => {
+            contador++;
+            const fila = tabla.insertRow();
+            fila.insertCell(0).innerText = contador;
+            fila.insertCell(1).innerText = d.nombre;
 
-        const fila = tabla.insertRow();
+            d.estados.forEach(e => {
+                const celda = fila.insertCell();
+                celda.innerHTML = `
+                <div class="estado-container">
+                    <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+                    ${createSelectOptions()}
+                    </select>
+                    <span class="estado-label">-</span>
+                </div>
+                `;
 
-        fila.insertCell(0).innerText = contador;
+                const select = celda.querySelector("select");
+                select.value = e;
+                actualizarColor(select);
+            });
 
-        fila.insertCell(1).innerText = d.nombre;
-
-        d.estados.forEach(e => {
-
-            const celda = fila.insertCell();
-
-            celda.innerHTML = `
-            <div class="estado-container">
-                <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
-                ${createSelectOptions()}
-                </select>
-                <span class="estado-label">-</span>
-            </div>
-            `;
-
-            const select = celda.querySelector("select");
-
-            select.value = e;
-
-            actualizarColor(select);
+            fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
         });
 
-        fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
-    });
+        actualizar();
+        return;
+    }
 
-    actualizar();
+    // Si no hay datos en localStorage, cargar de Firebase
+    const estudiantesFirebase = await cargarEstudiantes();
+    if (estudiantesFirebase.length > 0) {
+        estudiantesFirebase.forEach(d => {
+            contador++;
+            const fila = tabla.insertRow();
+            fila.insertCell(0).innerText = contador;
+            fila.insertCell(1).innerText = d.nombre;
+
+            const days = currentDaysCount();
+            for (let i = 0; i < days; i++) {
+                const celda = fila.insertCell();
+                celda.innerHTML = `
+                <div class="estado-container">
+                    <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+                    ${createSelectOptions()}
+                    </select>
+                    <span class="estado-label">-</span>
+                </div>
+                `;
+            }
+
+            fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
+        });
+
+        actualizar();
+    }
 }
 
 function daysInMonth(year, month) {
@@ -811,14 +838,14 @@ function mostrarConteoCurso() {
 ["anio","mes","salon"].forEach(id=>{
     const el = document.getElementById(id);
     if (el) {
-        el.addEventListener("change",()=>{
+        el.addEventListener("change",async ()=>{
             autoSave();
-            cargarSilent();
+            await cargarSilent();
         });
     }
 });
 
-(function(){
+(async function(){
     // Inicializar tabla
     tabla = document.getElementById("tabla");
     
@@ -836,6 +863,5 @@ function mostrarConteoCurso() {
     
     buildHeaders();
     verificarSesion();
+    await cargarSilent();
 })();
-
-
