@@ -972,8 +972,7 @@ function mostrarConteoCurso() {
                 contador = 0;
             }
             
-            // Luego guardar y cargar
-            autoSave();
+            // Cargar datos del nuevo grupo/mes/año
             await cargarSilent();
         });
     }
