@@ -30,30 +30,6 @@
 
 <h4>Información Básica</h4>
 
-<label>Seleccionar Grado</label>
-<select id="grado">
-<option value="">--Seleccionar grado--</option>
-<option value="Prescolar">Prescolar</option>
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-<option value="5">5</option>
-<option value="5A">5A</option>
-<option value="6A">6A</option>
-<option value="6B">6B</option>
-<option value="7A">7A</option>
-<option value="7B">7B</option>
-<option value="8A">8A</option>
-<option value="8B">8B</option>
-<option value="9A">9A</option>
-<option value="9B">9B</option>
-<option value="10A">10A</option>
-<option value="10B">10B</option>
-<option value="11A">11A</option>
-<option value="11B">11B</option>
-</select>
-
 <div class="estudiante-container">
 
 <input id="obsEstudiante" placeholder="Escribir nombre del estudiante" onkeyup="filtrarEstudiantes()">
@@ -290,50 +266,6 @@ if(typeof cargarObservaciones==="function"){
 cargarObservaciones();
 
 }
-
-// Listener para cambio de grado en observaciones
-document.getElementById("grado").addEventListener("change", async function() {
-    const gradoSeleccionado = this.value;
-    if (!gradoSeleccionado) return;
-    
-    try {
-        // Cargar estudiantes de Firebase filtrados por grado
-        const q = window.query(
-            window.collection(window.db, "estudiantes"),
-            window.where("grado", "==", gradoSeleccionado)
-        );
-        
-        const querySnapshot = await window.getDocs(q);
-        const estudiantesDiv = document.getElementById("estudiantesSugerencias");
-        estudiantesDiv.innerHTML = "";
-        
-        if (querySnapshot.size === 0) {
-            estudiantesDiv.innerHTML = "<div style='padding:10px; color:#999;'>No hay estudiantes en este grado</div>";
-            return;
-        }
-        
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const div = document.createElement("div");
-            div.textContent = data.nombre;
-            div.style.padding = "8px";
-            div.style.cursor = "pointer";
-            div.style.borderBottom = "1px solid #eee";
-            div.onclick = () => {
-                document.getElementById("obsEstudiante").value = data.nombre;
-                document.getElementById("obsGrado").value = data.grado;
-                estudiantesDiv.innerHTML = "";
-                estudiantesDiv.style.display = "none";
-            };
-            estudiantesDiv.appendChild(div);
-        });
-        
-        estudiantesDiv.style.display = "block";
-    } catch (error) {
-        console.error("Error al cargar estudiantes:", error);
-        alert("Error al cargar estudiantes");
-    }
-});
 
 });
 
