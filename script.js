@@ -695,9 +695,19 @@ function clearTable() {
     if (!tabla) tabla = document.getElementById("tabla");
     if (!tabla) return;
 
-    if (confirm("¿Estás seguro de que quieres limpiar toda la tabla?")) {
-        buildHeaders();
-        contador = 0;
+    if (confirm("¿Estás seguro de que quieres limpiar los estados de la tabla? Los nombres se mantienen.")) {
+        // Recorrer todas las filas (excepto header)
+        for (let i = 1; i < tabla.rows.length; i++) {
+            // Recorrer las celdas de estado (desde columna 2 hasta la penúltima)
+            const fila = tabla.rows[i];
+            for (let j = 2; j < fila.cells.length - 1; j++) {
+                const select = fila.cells[j].querySelector("select");
+                if (select) {
+                    select.value = "";
+                    actualizarColor(select);
+                }
+            }
+        }
         actualizar();
         autoSave();
     }
@@ -725,6 +735,76 @@ function eliminarTodosCurso() {
 }
 
 // FUNCIONES PARA OBSERVACIONES
+async function guardarObservacionFirebase(observacion) {
+    try {
+        const grado = observacion.grado || "sin-grado";
+        const docRef = window.doc(window.db, "observaciones", grado);
+        
+        // Obtener el documento actual
+        const docSnap = await window.getDoc(docRef);
+        let registros = [];
+        
+        if (docSnap.exists()) {
+            registros = docSnap.data().registros || [];
+        }
+        
+        // Agregar la nueva observación
+        registros.push(observacion);
+        
+        // Guardar de vuelta
+        await window.setDoc(docRef, {
+            grado: grado,
+            registros: registros,
+            fechaActualizacion: new Date().getTime()
+        });
+        
+        console.log("Observación guardada en Firebase para", grado);
+    } catch (error) {
+        console.error("Error al guardar observación en Firebase:", error);
+    }
+}
+
+async function cargarObservacionesFirebase() {
+    try {
+        const observaciones = [];
+        const querySnapshot = await window.getDocs(window.collection(window.db, "observaciones"));
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.registros && Array.isArray(data.registros)) {
+                observaciones.push(...data.registros);
+            }
+        });
+        
+        return observaciones;
+    } catch (error) {
+        console.error("Error al cargar observaciones de Firebase:", error);
+        return [];
+    }
+}
+
+async function eliminarObservacionFirebase(id, grado) {
+    try {
+        const docRef = window.doc(window.db, "observaciones", grado);
+        const docSnap = await window.getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            let registros = docSnap.data().registros || [];
+            registros = registros.filter(obs => obs.id !== id);
+            
+            await window.setDoc(docRef, {
+                grado: grado,
+                registros: registros,
+                fechaActualizacion: new Date().getTime()
+            });
+            
+            console.log("Observación eliminada de Firebase");
+        }
+    } catch (error) {
+        console.error("Error al eliminar observación de Firebase:", error);
+    }
+}
+
 function guardarObservacion() {
     const estudiante = document.getElementById("obsEstudiante").value.trim();
     const grado = document.getElementById("obsGrado").value.trim();
@@ -754,6 +834,9 @@ function guardarObservacion() {
     observaciones_list.push(observacion);
     localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
     
+    // Guardar también en Firebase
+    guardarObservacionFirebase(observacion);
+    
     alert("Observación guardada correctamente");
     
     document.getElementById("obsEstudiante").value = "";
@@ -772,8 +855,22 @@ function guardarObservacion() {
     cargarObservaciones();
 }
 
-function cargarObservaciones() {
-    const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+async function cargarObservaciones() {
+    // Intentar cargar de Firebase primero
+    const observacionesFirebase = await cargarObservacionesFirebase();
+    
+    let observaciones_list = observacionesFirebase || [];
+    
+    // Si no hay datos en Firebase, usar localStorage
+    if (observaciones_list.length === 0) {
+        observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    }
+    
+    // Guardar en localStorage también
+    if (observacionesFirebase && observacionesFirebase.length > 0) {
+        localStorage.setItem("observaciones", JSON.stringify(observacionesFirebase));
+    }
+    
     const listaDiv = document.getElementById("listaObservaciones");
     
     if (observaciones_list.length === 0) {
@@ -803,7 +900,7 @@ function cargarObservaciones() {
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.llamados}</td>`;
         const obsText = obs.observaciones || obs.anotaciones || obs.acciones || obs.ficha || obs.sanciones || obs.compromiso || "-";
         html += `<td style='border: 1px solid #ddd; padding: 8px; max-width: 300px;'>${obsText}</td>`;
-        html += `<td style='border: 1px solid #ddd; padding: 8px;'><button onclick="eliminarObservacion(${obs.id})" style='background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;'>Eliminar</button></td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'><button onclick="eliminarObservacion(${obs.id}, '${obs.grado}')" style='background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;'>Eliminar</button></td>`;
         html += "</tr>";
     });
     
@@ -817,18 +914,30 @@ function formatearFecha(fecha) {
     return date.toLocaleDateString("es-ES");
 }
 
-function eliminarObservacion(id) {
+function eliminarObservacion(id, grado) {
     if (confirm("¿Estás seguro de que quieres eliminar esta observación?")) {
         let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
         observaciones_list = observaciones_list.filter(obs => obs.id !== id);
         localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
+        
+        // Eliminar también de Firebase
+        if (grado) {
+            eliminarObservacionFirebase(id, grado);
+        }
+        
         cargarObservaciones();
     }
 }
 
-function exportarObservaciones() {
+async function exportarObservaciones() {
 
-    const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    // Cargar desde Firebase primero
+    let observaciones_list = await cargarObservacionesFirebase();
+    
+    // Si no hay datos en Firebase, usar localStorage
+    if (!observaciones_list || observaciones_list.length === 0) {
+        observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    }
 
     if (observaciones_list.length === 0) {
 
@@ -998,5 +1107,3 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
-
-
