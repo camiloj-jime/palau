@@ -132,7 +132,7 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDt1A5_sJmuXNTMUxAbHdO0awcq8BLMXXE",
@@ -153,6 +153,11 @@ window.addDoc = addDoc;
 window.getDocs = getDocs;
 window.query = query;
 window.where = where;
+window.doc = doc;
+window.getDoc = getDoc;
+window.setDoc = setDoc;
+window.deleteDoc = deleteDoc;
+window.onSnapshot = onSnapshot;
 
 </script>
 
