@@ -143,102 +143,79 @@ window.onSnapshot = onSnapshot;
 
 let todosEstudiantes = {};
 
-function cargarEstudiantesParaObservaciones(){
+async function cargarEstudiantesParaObservaciones(){
+    window.todosEstudiantes = {};
 
-window.todosEstudiantes={};
+    try {
+        const querySnapshot = await getDocs(collection(db, "estudiantes"));
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data && data.nombre) {
+                const nombre = data.nombre.trim();
+                if (nombre.length > 0) {
+                    todosEstudiantes[nombre] = data.grado || "";
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error cargando estudiantes desde Firebase:", error);
+    }
 
-for(let i=0;i<localStorage.length;i++){
-
-const key=localStorage.key(i);
-
-if(key && key!=="observaciones"){
-
-try{
-
-const data=JSON.parse(localStorage.getItem(key))||[];
-
-const parts=key.match(/(\d{4})(Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre)(.+)/);
-
-if(parts){
-
-const grado=parts[3];
-
-data.forEach(d=>{
-
-if(d.nombre){
-
-window.todosEstudiantes[d.nombre]=grado;
-
-}
-
-});
-
-}
-
-}catch(e){}
-
-}
-
-}
-
+    // Fallback: cargar desde localStorage si no hay datos en Firestore
+    if (Object.keys(todosEstudiantes).length === 0) {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key !== "observaciones") {
+                try {
+                    const data = JSON.parse(localStorage.getItem(key)) || [];
+                    const parts = key.match(/(\d{4})(Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre)(.+)/);
+                    if (parts) {
+                        const grado = parts[3];
+                        data.forEach(d => {
+                            if (d.nombre) {
+                                todosEstudiantes[d.nombre] = grado;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error leyendo localStorage para estudiantes:", e);
+                }
+            }
+        }
+    }
 }
 
 function filtrarEstudiantes(){
+    const query = document.getElementById("obsEstudiante").value.toLowerCase();
+    const sugerencias = document.getElementById("estudiantesSugerencias");
+    sugerencias.innerHTML = "";
 
-const query=document.getElementById("obsEstudiante").value.toLowerCase();
+    if (query.length === 0) {
+        sugerencias.style.display = "none";
+        return;
+    }
 
-const sugerencias=document.getElementById("estudiantesSugerencias");
+    const matches = Object.keys(todosEstudiantes).filter(nombre => nombre.toLowerCase().includes(query));
 
-sugerencias.innerHTML="";
-
-if(query.length===0){
-
-sugerencias.style.display="none";
-
-return;
-
-}
-
-const matches=Object.keys(window.todosEstudiantes).filter(nombre=>nombre.toLowerCase().includes(query));
-
-if(matches.length>0){
-
-sugerencias.style.display="block";
-
-matches.forEach(nombre=>{
-
-const div=document.createElement("div");
-
-div.textContent=nombre+" ("+window.todosEstudiantes[nombre]+")";
-
-div.style.padding="8px";
-
-div.style.cursor="pointer";
-
-div.style.borderBottom="1px solid #eee";
-
-div.onclick=()=>{
-
-document.getElementById("obsEstudiante").value=nombre;
-
-document.getElementById("obsGrado").value=window.todosEstudiantes[nombre];
-
-sugerencias.innerHTML="";
-
-sugerencias.style.display="none";
-
-};
-
-sugerencias.appendChild(div);
-
-});
-
-}else{
-
-sugerencias.style.display="none";
-
-}
-
+    if (matches.length > 0) {
+        sugerencias.style.display = "block";
+        matches.slice(0, 20).forEach(nombre => {
+            const div = document.createElement("div");
+            div.textContent = nombre + " (" + todosEstudiantes[nombre] + ")";
+            div.style.padding = "8px";
+            div.style.cursor = "pointer";
+            div.style.borderBottom = "1px solid #eee";
+            div.onclick = () => {
+                document.getElementById("obsEstudiante").value = nombre;
+                document.getElementById("obsGrado").value = todosEstudiantes[nombre] || "";
+                sugerencias.innerHTML = "";
+                sugerencias.style.display = "none";
+            };
+            sugerencias.appendChild(div);
+        });
+    } else {
+        sugerencias.style.display = "none";
+    }
 }
 
 document.addEventListener("click",(e)=>{
