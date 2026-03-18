@@ -946,11 +946,28 @@ async function exportarObservaciones() {
         return;
     }
 
+    // Filtrar por curso si se selecciona uno
+    const cursoSeleccionado = document.getElementById("searchCurso").value;
+    if (cursoSeleccionado) {
+        observaciones_list = observaciones_list.filter(obs => obs.grado === cursoSeleccionado);
+        if (observaciones_list.length === 0) {
+            alert(`No hay observaciones para el curso ${cursoSeleccionado}`);
+            return;
+        }
+    }
+
     const ahora = new Date();
 
     const mesNombre = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][ahora.getMonth()];
 
     const anioActual = ahora.getFullYear();
+
+    let titulo = `Observaciones ${mesNombre} ${anioActual}`;
+    let nombreArchivo = `observaciones_${mesNombre}_${anioActual}.html`;
+    if (cursoSeleccionado) {
+        titulo += ` - Curso ${cursoSeleccionado}`;
+        nombreArchivo = `observaciones_${cursoSeleccionado}_${mesNombre}_${anioActual}.html`;
+    }
 
     let html = `<!DOCTYPE html>
 <html lang="es">
@@ -987,7 +1004,7 @@ async function exportarObservaciones() {
     <div class="content">
         <div class="header">
             <h2>OBSERVACIONES COLEGIO FRANCISCO PALAU Y QUER</h2>
-            <p><strong>Mes:</strong> ${mesNombre} | <strong>Año:</strong> ${anioActual}</p>
+            <p><strong>Mes:</strong> ${mesNombre} | <strong>Año:</strong> ${anioActual}${cursoSeleccionado ? ` | <strong>Curso:</strong> ${cursoSeleccionado}` : ''}</p>
         </div>
         <table>
             <thead>
@@ -1043,7 +1060,7 @@ async function exportarObservaciones() {
 
     link.setAttribute("href", url);
 
-    link.setAttribute("download", `observaciones_${mesNombre}_${anioActual}.html`);
+    link.setAttribute("download", nombreArchivo);
 
     link.style.visibility = "hidden";
 
