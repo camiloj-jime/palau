@@ -12,7 +12,9 @@ const estadosConfig = {
     "SA": { label: "Suspensión académica", color: "#a855f7" },
     "E": { label: "Enfermedad", color: "#3b82f6" },
     "SAu": { label: "Salida autorizada", color: "#06b6d4" },
-    "IET": { label: "Excusa telefónica", color: "#ec4899" }
+    "IET": { label: "Excusa telefónica", color: "#ec4899" },
+    "CM": { label: "Cita médica", color: "#8b5cf6" },
+    "PL": { label: "Personal", color: "#06b6d4" }
 };
 
 let tabla = null;
@@ -109,6 +111,7 @@ function agregar() {
 
     actualizar();
     autoSave();
+    llenarSelectorEstudiantes();
     
     const grado = document.getElementById("salon").value;
     guardarEstudiante(nombre, grado);
@@ -202,8 +205,9 @@ function actualizarColor(select) {
     const codigo = select.value;
     const label = estadosConfig[codigo]?.label || "-";
 
-    select.style.background = color;
-    select.style.color = "white";
+    select.style.backgroundColor = color;
+    select.style.color = codigo ? "white" : "#999";
+    select.style.borderColor = color;
     select.title = label;
     
     // Actualizar el label visual con solo las iniciales
@@ -466,6 +470,8 @@ function cargarEstudiantesEnTabla(dados) {
 
         fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
     });
+
+llenarSelectorEstudiantes();
 }
 
 function daysInMonth(year, month) {
@@ -510,35 +516,49 @@ function filtrarEstudiantesAsistencia() {
     if (!tabla) return;
 
     const input = document.getElementById("nombreEstudiante");
-    const filtro = input.value.toLowerCase();
-    const sugerenciasDiv = document.getElementById("sugerenciasEstudiantes");
+    const filtro = input.value.toLowerCase().trim();
     
+    // Si no hay filtro, mostrar todos
     if (filtro.length === 0) {
-        sugerenciasDiv.innerHTML = "";
-        sugerenciasDiv.style.display = "none";
+        for (let i = 1; i < tabla.rows.length; i++) {
+            tabla.rows[i].style.display = "";
+        }
+        document.getElementById("sugerenciasEstudiantes").style.display = "none";
         return;
     }
     
-    const estudiantes = [];
+    // Filtrar filas por nombre
+    let encontrados = 0;
     for (let i = 1; i < tabla.rows.length; i++) {
         const nombre = tabla.rows[i].cells[1].innerText.toLowerCase();
         if (nombre.includes(filtro)) {
+            tabla.rows[i].style.display = "";
+            encontrados++;
+        } else {
+            tabla.rows[i].style.display = "none";
+        }
+    }
+    
+    // Mostrar sugerencias completamente visibles arriba
+    const sugerenciasDiv = document.getElementById("sugerenciasEstudiantes");
+    const estudiantes = [];
+    for (let i = 1; i < tabla.rows.length; i++) {
+        const nombre = tabla.rows[i].cells[1].innerText.toLowerCase();
+        if (nombre.includes(filtro) && !estudiantes.includes(tabla.rows[i].cells[1].innerText)) {
             estudiantes.push(tabla.rows[i].cells[1].innerText);
         }
     }
     
-    if (estudiantes.length === 0) {
+    if (estudiantes.length > 0 && estudiantes.length <= 5) {
+        let html = "";
+        estudiantes.forEach(est => {
+            html += `<div class="sugerencia" onclick="seleccionarEstudiante('${est}')">${est}</div>`;
+        });
+        sugerenciasDiv.innerHTML = html;
+        sugerenciasDiv.style.display = "block";
+    } else {
         sugerenciasDiv.style.display = "none";
-        return;
     }
-    
-    let html = "";
-    estudiantes.forEach(est => {
-        html += `<div class="sugerencia" onclick="seleccionarEstudiante('${est}')">${est}</div>`;
-    });
-    
-    sugerenciasDiv.innerHTML = html;
-    sugerenciasDiv.style.display = "block";
 }
 
 function seleccionarEstudiante(nombre) {
@@ -671,7 +691,7 @@ function exportar() {
     Object.keys(estadosConfig).forEach(code => {
         const config = estadosConfig[code];
         const bgColor = config.color;
-        html += `<span class="leyenda-item"><strong style="color: ${bgColor};">${code}</strong>=${config.label}</span>`;
+        html += `<span class="leyenda-item"><strong style="background-color: ${bgColor}; color: white; padding: 2px 6px; border-radius: 3px;">${code}</strong>=${config.label}</span>`;
     });
     
     html += `</div>
@@ -730,7 +750,61 @@ function eliminarTodosCurso() {
         buildHeaders();
         contador = 0;
         actualizar();
+        llenarSelectorEstudiantes();
         alert(`Se han eliminado todos los estudiantes del ${salon}`);
+    }
+}
+
+// FUNCIÓN PARA LLENAR SELECTOR DE ESTUDIANTES DEL CURSO
+function llenarSelectorEstudiantes() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    const selector = document.getElementById("selectorEstudiantesCurso");
+    
+    if (!selector) return;
+    
+    // Limpiar selector excepto opción principal
+    selector.innerHTML = '<option value="">-- Ver Todos --</option>';
+    
+    // Agregar todos los nombres de estudiantes de la tabla
+    const estudiantes = new Set();
+    for (let i = 1; i < tabla.rows.length; i++) {
+        const nombre = tabla.rows[i].cells[1]?.innerText;
+        if (nombre && nombre.trim()) {
+            estudiantes.add(nombre.trim());
+        }
+    }
+    
+    // Convertir a array y agregar al selector
+    Array.from(estudiantes).sort().forEach(nombre => {
+        const option = document.createElement("option");
+        option.value = nombre;
+        option.text = nombre;
+        selector.appendChild(option);
+    });
+}
+
+// FUNCIÓN PARA FILTRAR TABLA POR ESTUDIANTE SELECCIONADO
+function filtrarPorEstudianteSeleccionado() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    const selector = document.getElementById("selectorEstudiantesCurso");
+    const estudianteSeleccionado = selector.value;
+    
+    // Si es vacío, mostrar todos
+    if (!estudianteSeleccionado) {
+        for (let i = 1; i < tabla.rows.length; i++) {
+            tabla.rows[i].style.display = "";
+        }
+        return;
+    }
+    
+    // Mostrar solo el estudiante seleccionado
+    for (let i = 1; i < tabla.rows.length; i++) {
+        const nombre = tabla.rows[i].cells[1]?.innerText;
+        if (nombre === estudianteSeleccionado) {
+            tabla.rows[i].style.display = "";
+        } else {
+            tabla.rows[i].style.display = "none";
+        }
     }
 }
 
@@ -1124,3 +1198,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
+
+
+
