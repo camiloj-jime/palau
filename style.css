@@ -358,34 +358,29 @@ table tr:hover{
     font-weight:bold;
     font-size:9px;
     padding:0 2px;
-    z-index:2;
-    background:white;
+    z-index:1;
+    background:transparent;
     padding:1px 2px;
     border-radius:2px;
 }
 
 .estado-container select{
-    background:transparent !important;
-    color:transparent !important;
     padding:2px;
     border-radius:2px;
-    border:1px solid #999;
     font-weight:bold;
     width:100%;
     cursor:pointer;
-    font-size:9px;
-    height:20px;
+    font-size:11px;
+    height:22px;
+    border:2px solid;
 }
 
 .estado-container select:hover{
-    border-color:#2563eb;
+    opacity:0.9;
 }
 
 .estado-container select:focus{
-    background-color:white !important;
-    color:#333 !important;
     outline:none;
-    border-color:#2563eb;
     box-shadow:0 0 5px rgba(37, 99, 235, 0.3);
 }
 
@@ -547,4 +542,3 @@ table button{
         gap:8px;
     }
 }
-
