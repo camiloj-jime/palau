@@ -104,11 +104,16 @@
 
 </select>
 
-<label>Nombre del estudiante</label>
+<label>Buscar Estudiante del Curso</label>
+
+<select id="selectorEstudiantesCurso" onchange="filtrarPorEstudianteSeleccionado()">
+<option value="">-- Ver Todos --</option>
+</select>
+
+<label>O agregar nuevo estudiante</label>
 
 <div class="busqueda-container">
-<input id="nombreEstudiante" placeholder="Nombre del estudiante" onkeyup="filtrarEstudiantesAsistencia()">
-<div id="sugerenciasEstudiantes"></div>
+<input id="nombreEstudiante" placeholder="Nombre del estudiante" style="margin-top: 0;">
 </div>
 
 <button onclick="agregar()">Agregar</button>
@@ -179,6 +184,5 @@ window.onSnapshot = onSnapshot;
 <script src="script.js"></script>
 </body>
 </html>
-
 
 
