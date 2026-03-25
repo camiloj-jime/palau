@@ -206,8 +206,9 @@ function actualizarColor(select) {
     const label = estadosConfig[codigo]?.label || "-";
 
     select.style.backgroundColor = color;
-    select.style.color = codigo ? "white" : "#999";
+    select.style.color = codigo ? "black" : "#999";
     select.style.borderColor = color;
+    select.style.textShadow = "none";
     select.title = label;
     
     // Actualizar el label visual con solo las iniciales
@@ -216,7 +217,7 @@ function actualizarColor(select) {
     if (labelSpan) {
         labelSpan.textContent = codigo || "-";
         labelSpan.style.background = color;
-        labelSpan.style.color = "white";
+        labelSpan.style.color = "black";
     }
 }
 
@@ -1198,6 +1199,9 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
+
+
 
 
 
