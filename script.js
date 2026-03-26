@@ -494,17 +494,14 @@ function buildHeaders() {
 
     const days = currentDaysCount();
 
-    tabla.innerHTML = "";
-
-    const header = tabla.insertRow();
-
-    header.innerHTML = "<th>#</th><th>Nombre</th>";
-
+    // Usar thead/tbody para compatibilidad completa con sticky
+    let headerHtml = "<thead><tr><th>#</th><th>Nombre</th>";
     for (let d = 1; d <= days; d++) {
-        header.innerHTML += `<th>${d}</th>`;
+        headerHtml += `<th>${d}</th>`;
     }
+    headerHtml += "<th>Acciones</th></tr></thead><tbody></tbody>";
 
-    header.innerHTML += "<th>Acciones</th>";
+    tabla.innerHTML = headerHtml;
 }
 
 function onPeriodoChange() {
@@ -1233,7 +1230,6 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
-
 
 
 
