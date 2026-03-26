@@ -625,25 +625,26 @@ function exportar() {
         .no-print { display: block; padding: 20px; text-align: center; background: #f0f0f0; border-bottom: 2px solid #333; }
         .no-print button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
         .no-print button:hover { background: #1d4ed8; }
-        .content { padding: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h2 { margin: 10px 0; color: #1e3a8a; font-size: 18px; font-weight: bold; }
-        .header p { margin: 5px 0; font-size: 13px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #000; padding: 10px; text-align: center; font-size: 11px; }
-        th { background-color: #2563eb; color: white; font-weight: bold; height: 25px; }
-        td { height: 25px; }
-        .nombre-col { text-align: left; }
-        .numero-col { width: 30px; }
-        .leyenda { margin-top: 50px; page-break-before: avoid; }
-        .leyenda h3 { color: #1e3a8a; font-size: 12px; margin: 10px 0 8px 0; border-bottom: 1px solid #2563eb; padding-bottom: 3px; }
-        .leyenda-items { display: flex; flex-wrap: wrap; gap: 15px; font-size: 9px; line-height: 1.4; }
+        .content { padding: 8px; }
+        .header { text-align: center; margin-bottom: 10px; }
+        .header h2 { margin: 5px 0; color: #1e3a8a; font-size: 14px; font-weight: bold; }
+        .header p { margin: 2px 0; font-size: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; font-size: 8px; }
+        th { background-color: #2563eb; color: white; font-weight: bold; height: auto; line-height: 1.2; }
+        td { height: 18px; }
+        .nombre-col { text-align: left; padding-left: 4px; }
+        .numero-col { width: 25px; }
+        .leyenda { margin-top: 15px; page-break-before: avoid; }
+        .leyenda h3 { color: #1e3a8a; font-size: 10px; margin: 5px 0 5px 0; border-bottom: 1px solid #2563eb; padding-bottom: 2px; }
+        .leyenda-items { display: flex; flex-wrap: wrap; gap: 8px; font-size: 8px; line-height: 1.2; }
         .leyenda-item { display: inline-block; }
-        .pie { margin-top: 20px; font-size: 10px; text-align: center; color: #999; }
+        .pie { margin-top: 10px; font-size: 8px; text-align: center; color: #999; }
         @media print {
             .no-print { display: none; }
-            body { padding: 0; }
-            .content { padding: 15px; }
+            body { padding: 0; margin: 0; }
+            .content { padding: 5px; }
+            @page { margin: 5mm; size: landscape; }
         }
     </style>
 </head>
@@ -1199,6 +1200,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
