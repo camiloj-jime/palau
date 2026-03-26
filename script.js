@@ -842,7 +842,7 @@ function filtrarPorEstudianteSeleccionado() {
 }
 
 // FUNCIONES PARA OBSERVACIONES
-async function guardarObservacionFirebase(observacion) {
+async function guardarObservacionFirebase(observacion, isEdit = false) {
     try {
         const grado = observacion.grado || "sin-grado";
         const docRef = window.doc(window.db, "observaciones", grado);
@@ -855,8 +855,18 @@ async function guardarObservacionFirebase(observacion) {
             registros = docSnap.data().registros || [];
         }
 
-        // Agregar la nueva observación
-        registros.push(observacion);
+        if (isEdit) {
+            // Reemplazar la observación existente
+            const index = registros.findIndex(obs => obs.id === observacion.id);
+            if (index !== -1) {
+                registros[index] = observacion;
+            } else {
+                registros.push(observacion); // Si no se encuentra, agregar
+            }
+        } else {
+            // Agregar la nueva observación
+            registros.push(observacion);
+        }
 
         // Guardar de vuelta
         await window.setDoc(docRef, {
@@ -865,7 +875,7 @@ async function guardarObservacionFirebase(observacion) {
             fechaActualizacion: new Date().getTime()
         });
 
-        console.log("Observación guardada en Firebase para", grado);
+        console.log(isEdit ? "Observación editada en Firebase para" : "Observación guardada en Firebase para", grado);
     } catch (error) {
         console.error("Error al guardar observación en Firebase:", error);
     }
@@ -931,20 +941,33 @@ function guardarObservacion() {
         return;
     }
 
+    const editandoId = document.getElementById("editandoId") ? document.getElementById("editandoId").value : "";
+
     const observacion = {
         estudiante, grado, fecha, docente, desempeno, llamados, 
         anotaciones, acciones, ficha, sanciones, compromiso, observaciones,
-        id: Date.now()
+        id: editandoId ? parseInt(editandoId) : Date.now()
     };
 
     let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
-    observaciones_list.push(observacion);
+
+    if (editandoId) {
+        // Editar existente
+        const index = observaciones_list.findIndex(obs => obs.id === parseInt(editandoId));
+        if (index !== -1) {
+            observaciones_list[index] = observacion;
+        }
+    } else {
+        // Nueva
+        observaciones_list.push(observacion);
+    }
+
     localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
 
     // Guardar también en Firebase
-    guardarObservacionFirebase(observacion);
+    guardarObservacionFirebase(observacion, !!editandoId);
 
-    alert("Observación guardada correctamente");
+    alert(editandoId ? "Observación editada correctamente" : "Observación guardada correctamente");
 
     document.getElementById("obsEstudiante").value = "";
     document.getElementById("obsGrado").value = "";
@@ -958,6 +981,7 @@ function guardarObservacion() {
     document.getElementById("obsSanciones").value = "";
     document.getElementById("obsCompromiso").value = "";
     document.getElementById("obsObservaciones").value = "";
+    if (document.getElementById("editandoId")) document.getElementById("editandoId").value = "";
 
     cargarObservaciones();
 }
@@ -1007,7 +1031,7 @@ async function cargarObservaciones() {
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.llamados}</td>`;
         const obsText = obs.observaciones || obs.anotaciones || obs.acciones || obs.ficha || obs.sanciones || obs.compromiso || "-";
         html += `<td style='border: 1px solid #ddd; padding: 8px; max-width: 300px;'>${obsText}</td>`;
-        html += `<td style='border: 1px solid #ddd; padding: 8px;'><button onclick="eliminarObservacion(${obs.id}, '${obs.grado}')" style='background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;'>Eliminar</button></td>`;
+        html += `<td style='border: 1px solid #ddd; padding: 8px;'><button onclick="editarObservacion(${obs.id})" style='background: #f59e0b; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;'>Editar</button><button onclick="eliminarObservacion(${obs.id}, '${obs.grado}')" style='background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;'>Eliminar</button></td>`;
         html += "</tr>";
     });
 
@@ -1033,6 +1057,38 @@ function eliminarObservacion(id, grado) {
         }
 
         cargarObservaciones();
+    }
+}
+
+function editarObservacion(id) {
+    const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    const obs = observaciones_list.find(o => o.id === id);
+    if (!obs) return;
+
+    // Llenar el formulario
+    document.getElementById("obsEstudiante").value = obs.estudiante;
+    document.getElementById("obsGrado").value = obs.grado;
+    document.getElementById("obsFecha").value = obs.fecha;
+    document.getElementById("obsDocente").value = obs.docente;
+    document.getElementById("obsDesempeno").value = obs.desempeno;
+    document.getElementById("obsLlamados").value = obs.llamados;
+    document.getElementById("obsAnotaciones").value = obs.anotaciones;
+    document.getElementById("obsAcciones").value = obs.acciones;
+    document.getElementById("obsFicha").value = obs.ficha;
+    document.getElementById("obsSanciones").value = obs.sanciones;
+    document.getElementById("obsCompromiso").value = obs.compromiso;
+    document.getElementById("obsObservaciones").value = obs.observaciones;
+
+    // Setear ID de edición
+    if (document.getElementById("editandoId")) {
+        document.getElementById("editandoId").value = id;
+    } else {
+        // Si no existe, crearlo
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.id = "editandoId";
+        input.value = id;
+        document.querySelector("form").appendChild(input);
     }
 }
 
@@ -1231,6 +1287,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
