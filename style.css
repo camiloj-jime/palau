@@ -358,30 +358,30 @@ table tr:hover{
     font-weight:bold;
     font-size:9px;
     padding:0 2px;
-    z-index:1;
+     z-index:1;
     background:transparent;
     padding:1px 2px;
     border-radius:2px;
 }
 
 .estado-container select{
-    padding:2px;
+     padding:2px;
     border-radius:2px;
-    font-weight:bold;
+     font-weight:bold;
     width:100%;
     cursor:pointer;
-    font-size:11px;
+     font-size:11px;
     height:22px;
     border:2px solid;
 }
 
 .estado-container select:hover{
-    opacity:0.9;
+     opacity:0.9;
 }
 
 .estado-container select:focus{
-    outline:none;
-    box-shadow:0 0 5px rgba(37, 99, 235, 0.3);
+     outline:none;
+     box-shadow:0 0 5px rgba(37, 99, 235, 0.3);
 }
 
 .estado-container select option{
