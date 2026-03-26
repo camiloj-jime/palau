@@ -298,11 +298,65 @@ button:hover{
 /* TABLA */
 
 .tabla-container{
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+    border: 1px solid #dbe6f4;
+}
+
+table{
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
     background:white;
-    padding:20px;
-    border-radius:10px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1);
-    overflow-x:auto;
+}
+
+table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #1e40af;
+    color: white;
+    padding: 10px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid #0f172a;
+}
+
+table tbody tr:nth-child(odd){
+    background: #f7faff;
+}
+
+table tbody tr:hover {
+    background: #e5efff;
+}
+
+table td{
+    padding: 10px 8px;
+    color: #334155;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+table td:nth-child(1), table td:nth-child(2), table th:nth-child(1), table th:nth-child(2){
+    background: rgba(255,255,255,0.95);
+}
+
+.table-action button{
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid #c5d6f4;
+    background: #e5efff;
+    color: #1e3a8a;
+}
+
+.table-action button:hover{
+    background: #d0e0ff;
 }
 
 table{
@@ -398,24 +452,33 @@ table button{
 
 /* COLUMNAS FIJAS */
 
+table th {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: #2563eb;
+}
+
 table th:nth-child(1){
     position:sticky;
+    top:0;
     left:0;
-    z-index:12;
+    z-index:18;
     background:#2563eb;
 }
 
 table th:nth-child(2){
     position:sticky;
+    top:0;
     left:50px;
-    z-index:11;
+    z-index:17;
     background:#2563eb;
 }
 
 table td:nth-child(1){
     position:sticky;
     left:0;
-    z-index:10;
+    z-index:16;
     background:white;
 }
 
