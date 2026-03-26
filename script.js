@@ -501,12 +501,45 @@ function buildHeaders() {
     header.innerHTML = "<th>#</th><th>Nombre</th>";
 
     for (let d = 1; d <= days; d++) {
-
         header.innerHTML += `<th>${d}</th>`;
     }
 
     header.innerHTML += "<th>Acciones</th>";
 }
+
+function onPeriodoChange() {
+    // Guardar estado actual antes de cambiar.
+    autoSave();
+
+    // Actualiza días de la cabecera y carga datos del mes/salón seleccionado.
+    buildHeaders();
+    cargarSilent();
+}
+
+function inicializar() {
+    const anioSelect = document.getElementById("anio");
+
+    const anoActual = new Date().getFullYear();
+    anioSelect.innerHTML = "";
+
+    for (let y = anoActual - 2; y <= anoActual + 1; y++) {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.text = y;
+        if (y === anoActual) opt.selected = true;
+        anioSelect.appendChild(opt);
+    }
+
+    document.getElementById("mes").addEventListener("change", onPeriodoChange);
+    anioSelect.addEventListener("change", onPeriodoChange);
+    document.getElementById("salon").addEventListener("change", onPeriodoChange);
+
+    buildHeaders();
+    verificarSesion();
+    cargarSilent();
+}
+
+window.addEventListener("DOMContentLoaded", inicializar);
 
 function abrirObservaciones(){
 window.location.href="asistencia_observaciones.html";
@@ -1200,6 +1233,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
