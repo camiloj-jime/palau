@@ -883,16 +883,20 @@ async function guardarObservacionFirebase(observacion, isEdit = false) {
 
 async function cargarObservacionesFirebase() {
     try {
+        console.log("Iniciando carga de observaciones desde Firebase...");
         const observaciones = [];
         const querySnapshot = await window.getDocs(window.collection(window.db, "observaciones"));
+        console.log("Documentos obtenidos:", querySnapshot.size);
 
         querySnapshot.forEach((doc) => {
+            console.log("Documento:", doc.id, doc.data());
             const data = doc.data();
             if (data.registros && Array.isArray(data.registros)) {
                 observaciones.push(...data.registros);
             }
         });
 
+        console.log("Total observaciones cargadas:", observaciones.length);
         return observaciones;
     } catch (error) {
         console.error("Error al cargar observaciones de Firebase:", error);
