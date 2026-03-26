@@ -356,28 +356,24 @@ async function cargarAsistenciaFirebase() {
 
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
 
+        console.log("Intentando cargar asistencia de Firebase con docId:", docId);
+
         const docRef = window.doc(window.db, "asistencia", docId);
 
         const docSnap = await window.getDoc(docRef);
 
         if (docSnap.exists()) {
-
             const data = docSnap.data();
-
-            console.log("Asistencia cargada:", data);
-
+            console.log("Datos cargados de Firebase:", data);
             return data.estudiantes;
-
+        } else {
+            console.log("No hay datos en Firebase para", docId);
+            return null;
         }
 
-        return null;
-
     } catch (error) {
-
-        console.error("Error al cargar asistencia:", error);
-
+        console.error("Error al cargar asistencia de Firebase:", error);
         return null;
-
     }
 }
 
@@ -386,28 +382,30 @@ async function cargarSilent() {
     if (!tabla) return;
 
     const key = clave();
-    const datos = JSON.parse(localStorage.getItem(key));
 
-    // Si hay datos en localStorage, usarlos
-    if (datos && datos.length > 0) {
-        cargarEstudiantesEnTabla(datos); // Ya limpia tabla y reinicia contador
-        actualizar();
-        escucharActualizacionesFirebase();
-        return;
-    }
-
-    // Intentar cargar de Firebase
+    // Intentar cargar de Firebase primero
     const datosFirebase = await cargarAsistenciaFirebase();
     if (datosFirebase && datosFirebase.length > 0) {
         cargarEstudiantesEnTabla(datosFirebase);
-        // Guardar en localStorage también
+        // Guardar en localStorage también para respaldo
         localStorage.setItem(key, JSON.stringify(datosFirebase));
         actualizar();
         escucharActualizacionesFirebase();
         return;
     }
 
-    // Si no hay datos de asistencia, cargar estudiantes de Firebase
+    // Si no hay en Firebase, intentar de localStorage
+    const datosLocal = JSON.parse(localStorage.getItem(key));
+    if (datosLocal && datosLocal.length > 0) {
+        cargarEstudiantesEnTabla(datosLocal);
+        // Subir a Firebase si no estaba
+        guardarAsistenciaFirebase(datosLocal);
+        actualizar();
+        escucharActualizacionesFirebase();
+        return;
+    }
+
+    // Si no hay datos, cargar estudiantes de Firebase para inicializar
     const estudiantesFirebase = await cargarEstudiantes();
     if (estudiantesFirebase.length > 0) {
         buildHeaders();  // ← LIMPIA TABLA
@@ -1233,6 +1231,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
