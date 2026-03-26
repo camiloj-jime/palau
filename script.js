@@ -625,26 +625,26 @@ function exportar() {
         .no-print { display: block; padding: 20px; text-align: center; background: #f0f0f0; border-bottom: 2px solid #333; }
         .no-print button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
         .no-print button:hover { background: #1d4ed8; }
-        .content { padding: 8px; }
-        .header { text-align: center; margin-bottom: 10px; }
-        .header h2 { margin: 5px 0; color: #1e3a8a; font-size: 14px; font-weight: bold; }
-        .header p { margin: 2px 0; font-size: 10px; }
+        .content { padding: 12px; }
+        .header { text-align: center; margin-bottom: 12px; }
+        .header h2 { margin: 5px 0; color: #1e3a8a; font-size: 16px; font-weight: bold; }
+        .header p { margin: 3px 0; font-size: 11px; }
         table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; font-size: 8px; }
-        th { background-color: #2563eb; color: white; font-weight: bold; height: auto; line-height: 1.2; }
-        td { height: 18px; }
-        .nombre-col { text-align: left; padding-left: 4px; }
-        .numero-col { width: 25px; }
-        .leyenda { margin-top: 15px; page-break-before: avoid; }
-        .leyenda h3 { color: #1e3a8a; font-size: 10px; margin: 5px 0 5px 0; border-bottom: 1px solid #2563eb; padding-bottom: 2px; }
-        .leyenda-items { display: flex; flex-wrap: wrap; gap: 8px; font-size: 8px; line-height: 1.2; }
+        th, td { border: 1px solid #000; padding: 6px 3px; text-align: center; font-size: 10px; }
+        th { background-color: #2563eb; color: white; font-weight: bold; height: auto; line-height: 1.3; }
+        td { height: 22px; }
+        .nombre-col { text-align: left; padding-left: 5px; }
+        .numero-col { width: 28px; }
+        .leyenda { margin-top: 12px; page-break-before: avoid; }
+        .leyenda h3 { color: #1e3a8a; font-size: 11px; margin: 5px 0 5px 0; border-bottom: 1px solid #2563eb; padding-bottom: 3px; }
+        .leyenda-items { display: flex; flex-wrap: wrap; gap: 10px; font-size: 9px; line-height: 1.3; }
         .leyenda-item { display: inline-block; }
-        .pie { margin-top: 10px; font-size: 8px; text-align: center; color: #999; }
+        .pie { margin-top: 12px; font-size: 9px; text-align: center; color: #999; }
         @media print {
             .no-print { display: none; }
             body { padding: 0; margin: 0; }
-            .content { padding: 5px; }
-            @page { margin: 5mm; size: landscape; }
+            .content { padding: 10px; }
+            @page { margin: 12mm; size: 8.5in 14in; }
         }
     </style>
 </head>
