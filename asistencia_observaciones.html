@@ -144,7 +144,7 @@ try {
 
 </script>
 
-<script type="module" src="script.js" defer></script>
+<script src="script.js"></script>
 
 <script>
 
@@ -249,6 +249,12 @@ if(typeof cargarObservaciones==="function"){
 
 cargarObservaciones();
 
+}
+
+// Verificar sesión para regresar
+if (!sessionStorage.getItem("usuarioLogueado")) {
+    alert("Sesión expirada. Regresando al login.");
+    window.location.href = "index.html";
 }
 
 });
