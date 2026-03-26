@@ -514,26 +514,29 @@ function onPeriodoChange() {
 }
 
 function inicializar() {
-    const anioSelect = document.getElementById("anio");
+    // Solo inicializar si estamos en la página principal (index.html)
+    if (document.getElementById("panel")) {
+        const anioSelect = document.getElementById("anio");
 
-    const anoActual = new Date().getFullYear();
-    anioSelect.innerHTML = "";
+        const anoActual = new Date().getFullYear();
+        anioSelect.innerHTML = "";
 
-    for (let y = anoActual - 2; y <= anoActual + 1; y++) {
-        const opt = document.createElement("option");
-        opt.value = y;
-        opt.text = y;
-        if (y === anoActual) opt.selected = true;
-        anioSelect.appendChild(opt);
+        for (let y = anoActual - 2; y <= anoActual + 1; y++) {
+            const opt = document.createElement("option");
+            opt.value = y;
+            opt.text = y;
+            if (y === anoActual) opt.selected = true;
+            anioSelect.appendChild(opt);
+        }
+
+        document.getElementById("mes").addEventListener("change", onPeriodoChange);
+        anioSelect.addEventListener("change", onPeriodoChange);
+        document.getElementById("salon").addEventListener("change", onPeriodoChange);
+
+        buildHeaders();
+        verificarSesion();
+        cargarSilent();
     }
-
-    document.getElementById("mes").addEventListener("change", onPeriodoChange);
-    anioSelect.addEventListener("change", onPeriodoChange);
-    document.getElementById("salon").addEventListener("change", onPeriodoChange);
-
-    buildHeaders();
-    verificarSesion();
-    cargarSilent();
 }
 
 window.addEventListener("DOMContentLoaded", inicializar);
