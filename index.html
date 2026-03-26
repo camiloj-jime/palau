@@ -168,21 +168,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// hacer las funciones globales
-window.db = db;
-window.collection = collection;
-window.addDoc = addDoc;
-window.getDocs = getDocs;
-window.query = query;
-window.where = where;
-window.setDoc = setDoc;
-window.doc = doc;
-window.onSnapshot = onSnapshot;
-window.deleteDoc = deleteDoc;
-
 </script>
 
-<script src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
 
