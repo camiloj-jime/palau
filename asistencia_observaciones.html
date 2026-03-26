@@ -119,25 +119,32 @@ const firebaseConfig = {
   appId: "1:303175661771:web:c38dce685c3696202f834e"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let app, db;
 
-// hacer las funciones globales
-window.db = db;
-window.collection = collection;
-window.addDoc = addDoc;
-window.getDocs = getDocs;
-window.query = query;
-window.where = where;
-window.doc = doc;
-window.getDoc = getDoc;
-window.setDoc = setDoc;
-window.deleteDoc = deleteDoc;
-window.onSnapshot = onSnapshot;
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+
+    // hacer las funciones globales
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs;
+    window.query = query;
+    window.where = where;
+    window.doc = doc;
+    window.getDoc = getDoc;
+    window.setDoc = setDoc;
+    window.deleteDoc = deleteDoc;
+    window.onSnapshot = onSnapshot;
+} catch (error) {
+    console.error("Error initializing Firebase:", error);
+    alert("Error al conectar con Firebase. Verifica la configuración.");
+}
 
 </script>
 
-<script src="script.js" defer></script>
+<script type="module" src="script.js" defer></script>
 
 <script>
 
@@ -250,5 +257,4 @@ cargarObservaciones();
 
 </body>
 </html>
-
 
