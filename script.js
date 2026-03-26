@@ -1,37 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, setDoc, doc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDt1A5_sJmuXNTMUxAbHdO0awcq8BLMXXE",
-  authDomain: "palaud.firebaseapp.com",
-  projectId: "palaud",
-  storageBucket: "palaud.firebasestorage.app",
-  messagingSenderId: "303175661771",
-  appId: "1:303175661771:web:c38dce685c3696202f834e"
-};
-
-let app, db;
-
-try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-
-    // hacer las funciones globales
-    window.db = db;
-    window.collection = collection;
-    window.addDoc = addDoc;
-    window.getDocs = getDocs;
-    window.query = query;
-    window.where = where;
-    window.setDoc = setDoc;
-    window.doc = doc;
-    window.onSnapshot = onSnapshot;
-    window.deleteDoc = deleteDoc;
-} catch (error) {
-    console.error("Error initializing Firebase:", error);
-    alert("Error al conectar con Firebase. Verifica la configuración.");
-}
-
 const usuarios = [
     { user: "admin", pass: "admin" },
     { user: "profesor", pass: "1234" }
@@ -88,7 +54,7 @@ function logout() {
         unsubscribe();
         unsubscribe = null;
     }
-    
+
     sessionStorage.removeItem("usuarioLogueado");
     document.getElementById("login").style.display = "block";
     document.getElementById("panel").style.display = "none";
@@ -146,7 +112,7 @@ function agregar() {
     actualizar();
     autoSave();
     llenarSelectorEstudiantes();
-    
+
     const grado = document.getElementById("salon").value;
     guardarEstudiante(nombre, grado);
 }
@@ -181,16 +147,16 @@ async function guardarEstudiante(nombre, grado) {
 async function cargarEstudiantes() {
     try {
         const grado = document.getElementById("salon").value;
-        
+
         // Usar query con where para filtrar en Firebase directamente
         const q = window.query(
             window.collection(window.db, "estudiantes"),
             window.where("grado", "==", grado)
         );
-        
+
         const querySnapshot = await window.getDocs(q);
         const estudiantes = [];
-        
+
         querySnapshot.forEach((doc) => {
             estudiantes.push({
                 id: doc.id,
@@ -198,7 +164,7 @@ async function cargarEstudiantes() {
             });
             console.log("Estudiante cargado:", doc.data());
         });
-        
+
         return estudiantes;
     } catch (error) {
         console.error("Error al cargar estudiantes:", error);
@@ -240,18 +206,18 @@ function actualizarColor(select) {
     const label = estadosConfig[codigo]?.label || "-";
 
     select.style.backgroundColor = color;
-    select.style.color = codigo ? "black" : "#999";
+  select.style.color = codigo ? "black" : "#999";
     select.style.borderColor = color;
     select.style.textShadow = "none";
     select.title = label;
-    
+
     // Actualizar el label visual con solo las iniciales
-    const container = select.parentElement;
+     const container = select.parentElement;
     const labelSpan = container.querySelector('.estado-label');
     if (labelSpan) {
         labelSpan.textContent = codigo || "-";
         labelSpan.style.background = color;
-        labelSpan.style.color = "black";
+       labelSpan.style.color = "black";
     }
 }
 
@@ -317,7 +283,7 @@ function autoSave() {
     }
 
     localStorage.setItem(key, JSON.stringify(datos));
-    
+
     // También guardar en Firebase
     guardarAsistenciaFirebase(datos);
 }
@@ -327,13 +293,13 @@ async function guardarAsistenciaFirebase(datos) {
         const anio = document.getElementById("anio").value;
         const mes = document.getElementById("mes").value;
         const salon = document.getElementById("salon").value;
-        
+
         // Crear un ID único para este grado/mes/año
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
-        
+
         // Usar setDoc para actualizar/crear el documento (no addDoc)
         const docRef = window.doc(window.db, "asistencia", docId);
-        
+
         await window.setDoc(docRef, {
             anio: anio,
             mes: mes,
@@ -342,7 +308,7 @@ async function guardarAsistenciaFirebase(datos) {
             fechaActualizacion: new Date().getTime(),
             docId: docId
         });
-        
+
         console.log("Asistencia guardada en Firebase para", salon, mes, anio);
     } catch (error) {
         console.error("Error al guardar asistencia en Firebase:", error);
@@ -357,19 +323,19 @@ function escucharActualizacionesFirebase() {
         const mes = document.getElementById("mes").value;
         const salon = document.getElementById("salon").value;
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
-        
+
         // Cancelar escucha anterior si existe
         if (unsubscribe) {
             unsubscribe();
         }
-        
+
         // Escuchar cambios en tiempo real
         const docRef = window.doc(window.db, "asistencia", docId);
         unsubscribe = window.onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 console.log("Asistencia actualizada en tiempo real:", data);
-                
+
                 // Recargar la tabla con los nuevos datos si es necesario
                 if (data.estudiantes && data.estudiantes.length > 0) {
                     cargarEstudiantesEnTabla(data.estudiantes);
@@ -446,7 +412,7 @@ async function cargarSilent() {
     if (estudiantesFirebase.length > 0) {
         buildHeaders();  // ← LIMPIA TABLA
         contador = 0;    // ← REINICIA CONTADOR
-        
+
         estudiantesFirebase.forEach(d => {
             contador++;
             const fila = tabla.insertRow();
@@ -552,7 +518,7 @@ function filtrarEstudiantesAsistencia() {
 
     const input = document.getElementById("nombreEstudiante");
     const filtro = input.value.toLowerCase().trim();
-    
+
     // Si no hay filtro, mostrar todos
     if (filtro.length === 0) {
         for (let i = 1; i < tabla.rows.length; i++) {
@@ -561,7 +527,7 @@ function filtrarEstudiantesAsistencia() {
         document.getElementById("sugerenciasEstudiantes").style.display = "none";
         return;
     }
-    
+
     // Filtrar filas por nombre
     let encontrados = 0;
     for (let i = 1; i < tabla.rows.length; i++) {
@@ -573,7 +539,7 @@ function filtrarEstudiantesAsistencia() {
             tabla.rows[i].style.display = "none";
         }
     }
-    
+
     // Mostrar sugerencias completamente visibles arriba
     const sugerenciasDiv = document.getElementById("sugerenciasEstudiantes");
     const estudiantes = [];
@@ -583,7 +549,7 @@ function filtrarEstudiantesAsistencia() {
             estudiantes.push(tabla.rows[i].cells[1].innerText);
         }
     }
-    
+
     if (estudiantes.length > 0 && estudiantes.length <= 5) {
         let html = "";
         estudiantes.forEach(est => {
@@ -607,24 +573,24 @@ function volverAsistenciaConSesion() {
 
 function bulkAdd() {
     const lista = document.getElementById("listaEstudiantes").value.trim();
-    
+
     if (!lista) {
         alert("Por favor escribe los nombres en la lista");
         return;
     }
-    
+
     const nombres = lista.split('\n').filter(n => n.trim().length > 0);
-    
+
     if (nombres.length === 0) {
         alert("No hay nombres válidos para agregar");
         return;
     }
-    
+
     nombres.forEach(nombre => {
         document.getElementById("nombreEstudiante").value = nombre.trim();
         agregar();
     });
-    
+
     document.getElementById("listaEstudiantes").value = "";
     alert(`Se agregaron ${nombres.length} estudiantes`);
 }
@@ -646,7 +612,7 @@ function exportar() {
     const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const mesNombre = meses[mesIndex];
     const anio = document.getElementById("anio").value;
-    
+
     let html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -695,40 +661,40 @@ function exportar() {
                 <tr>
                     <th class="numero-col">#</th>
                     <th>Nombre del Estudiante</th>`;
-    
+
     for (let d = 1; d <= currentDaysCount(); d++) {
         html += `<th>${d}</th>`;
     }
-    
+
     html += `</tr>
             </thead>
             <tbody>`;
-    
+
     for (let i = 1; i < tabla.rows.length; i++) {
         const nombre = tabla.rows[i].cells[1].innerText;
         html += `<tr><td class="numero-col">${i}</td><td class="nombre-col">${nombre}</td>`;
-        
+
         for (let d = 2; d < tabla.rows[i].cells.length - 1; d++) {
             const estado = tabla.rows[i].cells[d].querySelector("select")?.value || "";
             html += `<td>${estado}</td>`;
         }
-        
+
         html += `</tr>`;
     }
-    
+
     html += `</tbody>
         </table>
         <div class="leyenda">
             <h3>LEYENDA DE ESTADOS</h3>
             <div class="leyenda-items">`;
-    
+
     // Agregar la leyenda de estados en línea
     Object.keys(estadosConfig).forEach(code => {
         const config = estadosConfig[code];
         const bgColor = config.color;
         html += `<span class="leyenda-item"><strong style="background-color: ${bgColor}; color: white; padding: 2px 6px; border-radius: 3px;">${code}</strong>=${config.label}</span>`;
     });
-    
+
     html += `</div>
         </div>
         <div class="pie">
@@ -737,7 +703,7 @@ function exportar() {
     </div>
 </body>
 </html>`;
-    
+
     const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -768,80 +734,25 @@ function clearTable() {
     }
 }
 
-async function eliminarEstudiantesFirebase(grado) {
-    try {
-        const q = window.query(
-            window.collection(window.db, "estudiantes"),
-            window.where("grado", "==", grado)
-        );
-        
-        const querySnapshot = await window.getDocs(q);
-        const deletePromises = [];
-        
-        querySnapshot.forEach((doc) => {
-            deletePromises.push(window.deleteDoc(doc.ref));
-        });
-        
-        await Promise.all(deletePromises);
-        console.log(`Estudiantes del grado ${grado} eliminados de Firebase`);
-    } catch (error) {
-        console.error("Error al eliminar estudiantes de Firebase:", error);
-        throw error;
-    }
-}
-
-async function eliminarAsistenciaFirebase(grado) {
-    try {
-        // Buscar todos los documentos de asistencia que contengan este grado
-        const q = window.query(
-            window.collection(window.db, "asistencia"),
-            window.where("grado", "==", grado)
-        );
-        
-        const querySnapshot = await window.getDocs(q);
-        const deletePromises = [];
-        
-        querySnapshot.forEach((doc) => {
-            deletePromises.push(window.deleteDoc(doc.ref));
-        });
-        
-        await Promise.all(deletePromises);
-        console.log(`Asistencia del grado ${grado} eliminada de Firebase`);
-    } catch (error) {
-        console.error("Error al eliminar asistencia de Firebase:", error);
-        throw error;
-    }
-}
-
 function eliminarTodosCurso() {
     if (!tabla) tabla = document.getElementById("tabla");
     if (!tabla) return;
 
     const salon = document.getElementById("salon").value;
-    
+
     if (!salon) {
         alert("Por favor selecciona un salón primero");
         return;
     }
-    
-    if (confirm(`¿Estás seguro de que quieres eliminar TODOS los estudiantes del ${salon}? Esto también eliminará los datos de Firebase.`)) {
-        // Eliminar de localStorage
+
+    if (confirm(`¿Estás seguro de que quieres eliminar TODOS los estudiantes del ${salon}?`)) {
         const key = clave();
         localStorage.removeItem(key);
-        
-        // Eliminar de Firebase
-        eliminarEstudiantesFirebase(salon).then(() => {
-            return eliminarAsistenciaFirebase(salon);
-        }).then(() => {
-            buildHeaders();
-            contador = 0;
-            actualizar();
-            llenarSelectorEstudiantes();
-            alert(`Se han eliminado todos los estudiantes del ${salon} de localStorage y Firebase`);
-        }).catch((error) => {
-            console.error("Error al eliminar de Firebase:", error);
-            alert("Error al eliminar de Firebase. Los datos locales han sido eliminados.");
-        });
+        buildHeaders();
+        contador = 0;
+        actualizar();
+        llenarSelectorEstudiantes();
+        alert(`Se han eliminado todos los estudiantes del ${salon}`);
     }
 }
 
@@ -849,12 +760,12 @@ function eliminarTodosCurso() {
 function llenarSelectorEstudiantes() {
     if (!tabla) tabla = document.getElementById("tabla");
     const selector = document.getElementById("selectorEstudiantesCurso");
-    
+
     if (!selector) return;
-    
+
     // Limpiar selector excepto opción principal
     selector.innerHTML = '<option value="">-- Ver Todos --</option>';
-    
+
     // Agregar todos los nombres de estudiantes de la tabla
     const estudiantes = new Set();
     for (let i = 1; i < tabla.rows.length; i++) {
@@ -863,7 +774,7 @@ function llenarSelectorEstudiantes() {
             estudiantes.add(nombre.trim());
         }
     }
-    
+
     // Convertir a array y agregar al selector
     Array.from(estudiantes).sort().forEach(nombre => {
         const option = document.createElement("option");
@@ -878,7 +789,7 @@ function filtrarPorEstudianteSeleccionado() {
     if (!tabla) tabla = document.getElementById("tabla");
     const selector = document.getElementById("selectorEstudiantesCurso");
     const estudianteSeleccionado = selector.value;
-    
+
     // Si es vacío, mostrar todos
     if (!estudianteSeleccionado) {
         for (let i = 1; i < tabla.rows.length; i++) {
@@ -886,7 +797,7 @@ function filtrarPorEstudianteSeleccionado() {
         }
         return;
     }
-    
+
     // Mostrar solo el estudiante seleccionado
     for (let i = 1; i < tabla.rows.length; i++) {
         const nombre = tabla.rows[i].cells[1]?.innerText;
@@ -903,25 +814,25 @@ async function guardarObservacionFirebase(observacion) {
     try {
         const grado = observacion.grado || "sin-grado";
         const docRef = window.doc(window.db, "observaciones", grado);
-        
+
         // Obtener el documento actual
         const docSnap = await window.getDoc(docRef);
         let registros = [];
-        
+
         if (docSnap.exists()) {
             registros = docSnap.data().registros || [];
         }
-        
+
         // Agregar la nueva observación
         registros.push(observacion);
-        
+
         // Guardar de vuelta
         await window.setDoc(docRef, {
             grado: grado,
             registros: registros,
             fechaActualizacion: new Date().getTime()
         });
-        
+
         console.log("Observación guardada en Firebase para", grado);
     } catch (error) {
         console.error("Error al guardar observación en Firebase:", error);
@@ -932,14 +843,14 @@ async function cargarObservacionesFirebase() {
     try {
         const observaciones = [];
         const querySnapshot = await window.getDocs(window.collection(window.db, "observaciones"));
-        
+
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if (data.registros && Array.isArray(data.registros)) {
                 observaciones.push(...data.registros);
             }
         });
-        
+
         return observaciones;
     } catch (error) {
         console.error("Error al cargar observaciones de Firebase:", error);
@@ -951,17 +862,17 @@ async function eliminarObservacionFirebase(id, grado) {
     try {
         const docRef = window.doc(window.db, "observaciones", grado);
         const docSnap = await window.getDoc(docRef);
-        
+
         if (docSnap.exists()) {
             let registros = docSnap.data().registros || [];
             registros = registros.filter(obs => obs.id !== id);
-            
+
             await window.setDoc(docRef, {
                 grado: grado,
                 registros: registros,
                 fechaActualizacion: new Date().getTime()
             });
-            
+
             console.log("Observación eliminada de Firebase");
         }
     } catch (error) {
@@ -982,27 +893,27 @@ function guardarObservacion() {
     const sanciones = document.getElementById("obsSanciones").value.trim();
     const compromiso = document.getElementById("obsCompromiso").value.trim();
     const observaciones = document.getElementById("obsObservaciones").value.trim();
-    
+
     if (!estudiante || !fecha) {
         alert("Por favor completa al menos el nombre del estudiante y la fecha");
         return;
     }
-    
+
     const observacion = {
         estudiante, grado, fecha, docente, desempeno, llamados, 
         anotaciones, acciones, ficha, sanciones, compromiso, observaciones,
         id: Date.now()
     };
-    
+
     let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
     observaciones_list.push(observacion);
     localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
-    
+
     // Guardar también en Firebase
     guardarObservacionFirebase(observacion);
-    
+
     alert("Observación guardada correctamente");
-    
+
     document.getElementById("obsEstudiante").value = "";
     document.getElementById("obsGrado").value = "";
     document.getElementById("obsFecha").value = "";
@@ -1015,33 +926,33 @@ function guardarObservacion() {
     document.getElementById("obsSanciones").value = "";
     document.getElementById("obsCompromiso").value = "";
     document.getElementById("obsObservaciones").value = "";
-    
+
     cargarObservaciones();
 }
 
 async function cargarObservaciones() {
     // Intentar cargar de Firebase primero
     const observacionesFirebase = await cargarObservacionesFirebase();
-    
+
     let observaciones_list = observacionesFirebase || [];
-    
+
     // Si no hay datos en Firebase, usar localStorage
     if (observaciones_list.length === 0) {
         observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
     }
-    
+
     // Guardar en localStorage también
     if (observacionesFirebase && observacionesFirebase.length > 0) {
         localStorage.setItem("observaciones", JSON.stringify(observacionesFirebase));
     }
-    
+
     const listaDiv = document.getElementById("listaObservaciones");
-    
+
     if (observaciones_list.length === 0) {
         listaDiv.innerHTML = "<p>No hay observaciones registradas</p>";
         return;
     }
-    
+
     let html = "<table style='width:100%; border-collapse: collapse;'>";
     html += "<tr style='background: #2563eb; color: white;'>";
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Estudiante</th>";
@@ -1053,7 +964,7 @@ async function cargarObservaciones() {
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Observaciones</th>";
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Acción</th>";
     html += "</tr>";
-    
+
     observaciones_list.forEach(obs => {
         html += "<tr style='background: #f9f9f9;'>";
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.estudiante}</td>`;
@@ -1067,7 +978,7 @@ async function cargarObservaciones() {
         html += `<td style='border: 1px solid #ddd; padding: 8px;'><button onclick="eliminarObservacion(${obs.id}, '${obs.grado}')" style='background: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;'>Eliminar</button></td>`;
         html += "</tr>";
     });
-    
+
     html += "</table>";
     listaDiv.innerHTML = html;
 }
@@ -1083,12 +994,12 @@ function eliminarObservacion(id, grado) {
         let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
         observaciones_list = observaciones_list.filter(obs => obs.id !== id);
         localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
-        
+
         // Eliminar también de Firebase
         if (grado) {
             eliminarObservacionFirebase(id, grado);
         }
-        
+
         cargarObservaciones();
     }
 }
@@ -1097,7 +1008,7 @@ async function exportarObservaciones() {
 
     // Cargar desde Firebase primero
     let observaciones_list = await cargarObservacionesFirebase();
-    
+
     // Si no hay datos en Firebase, usar localStorage
     if (!observaciones_list || observaciones_list.length === 0) {
         observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
@@ -1237,15 +1148,15 @@ async function exportarObservaciones() {
 
 function mostrarConteoCurso() {
     const curso = document.getElementById("searchCurso").value;
-    
+
     if (!curso) {
         alert("Por favor selecciona un curso");
         return;
     }
-    
+
     const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
     const conteo = observaciones_list.filter(obs => obs.grado === curso).length;
-    
+
     const conteDiv = document.getElementById("conteoCurso");
     conteDiv.textContent = `Observaciones en ${curso}: ${conteo}`;
     conteDiv.style.display = "block";
@@ -1261,7 +1172,7 @@ function mostrarConteoCurso() {
                 buildHeaders();
                 contador = 0;
             }
-            
+
             // Cargar datos del nuevo grupo/mes/año
             await cargarSilent();
         });
@@ -1271,7 +1182,7 @@ function mostrarConteoCurso() {
 (async function(){
     // Inicializar tabla
     tabla = document.getElementById("tabla");
-    
+
     const anio = document.getElementById("anio");
     if (anio) {
         const actual = new Date().getFullYear();
@@ -1283,7 +1194,7 @@ function mostrarConteoCurso() {
             anio.appendChild(op);
         }
     }
-    
+
     buildHeaders();
     verificarSesion();
     await cargarSilent();
