@@ -440,6 +440,12 @@ async function guardarAsistenciaFirebase(datos) {
             return;
         }
 
+        // No grabar si no hay datos válidos que guardar
+        if (!Array.isArray(datos) || datos.length === 0) {
+            console.warn("guardarAsistenciaFirebase: No hay datos, no se realiza setDoc");
+            return;
+        }
+
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
 
         console.log("guardarAsistenciaFirebase: Intentando guardar con docId:", docId);
@@ -460,7 +466,7 @@ async function guardarAsistenciaFirebase(datos) {
             estudiantes: datos,
             fechaActualizacion: new Date().getTime(),
             docId: docId
-        });
+        }, { merge: true });
 
         console.log("✅ Asistencia guardada en Firebase para:", salon, mes, anio);
         showMessage("Asistencia guardada en Firebase ✓", "success", 1500);
@@ -706,8 +712,10 @@ function buildHeaders() {
 }
 
 async function onPeriodoChange() {
-    // Guardar estado actual antes de cambiar.
-    await autoSave();
+    // Guardar estado actual antes de cambiar, solo si hay filas con datos.
+    if (tabla && tabla.rows.length > 1) {
+        await autoSave();
+    }
 
     // Actualiza días de la cabecera y carga datos del mes/salón seleccionado.
     buildHeaders();
@@ -1508,7 +1516,6 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
-
 
 
 
