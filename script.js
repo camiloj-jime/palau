@@ -1523,22 +1523,8 @@ function mostrarConteoCurso() {
     conteDiv.style.display = "block";
 }
 
-["anio","mes","salon"].forEach(id=>{
-    const el = document.getElementById(id);
-    if (el) {
-        el.addEventListener("change",async ()=>{
-            // Primero limpiar la tabla completamente
-            if (!tabla) tabla = document.getElementById("tabla");
-            if (tabla) {
-                buildHeaders();
-                contador = 0;
-            }
-
-            // Cargar datos del nuevo grupo/mes/año
-            await cargarSilent();
-        });
-    }
-});
+// El cambio de periodo ya está manejado por onPeriodoChange() en inicializar().
+// Evitamos listeners duplicados para prevenir concurrencia entre autoSave/cargarSilent.
 
 (async function(){
     // Inicializar tabla
@@ -1560,9 +1546,6 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
-
-
-
 
 
 
