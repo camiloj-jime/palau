@@ -1014,9 +1014,15 @@ function filtrarPorEstudianteSeleccionado() {
 }
 
 // FUNCIONES PARA OBSERVACIONES
-async function guardarObservacionFirebase(observacion, isEdit = false) {
+async function guardarObservacionFirebase(observacion, isEdit = false, gradoAnterior = null) {
     try {
         const grado = observacion.grado || "sin-grado";
+
+        // Si cambió el grado de la observación, eliminar de la colección anterior
+        if (gradoAnterior && gradoAnterior !== grado) {
+            await eliminarObservacionFirebase(observacion.id, gradoAnterior);
+        }
+
         const docRef = window.doc(window.db, "observaciones", grado);
 
         // Obtener el documento actual
@@ -1027,16 +1033,12 @@ async function guardarObservacionFirebase(observacion, isEdit = false) {
             registros = docSnap.data().registros || [];
         }
 
-        if (isEdit) {
-            // Reemplazar la observación existente
-            const index = registros.findIndex(obs => obs.id === observacion.id);
-            if (index !== -1) {
-                registros[index] = observacion;
-            } else {
-                registros.push(observacion); // Si no se encuentra, agregar
-            }
+        const observacionId = Number(observacion.id);
+        const index = registros.findIndex(obs => Number(obs.id) === observacionId);
+
+        if (index !== -1) {
+            registros[index] = observacion;
         } else {
-            // Agregar la nueva observación
             registros.push(observacion);
         }
 
@@ -1120,18 +1122,22 @@ function guardarObservacion() {
     const editandoId = document.getElementById("editandoId") ? document.getElementById("editandoId").value : "";
 
     const observacion = {
-        estudiante, grado, fecha, docente, desempeno, llamados, 
+        estudiante, grado, fecha, docente, desempeno, llamados,
         anotaciones, acciones, ficha, sanciones, compromiso, observaciones,
-        id: editandoId ? parseInt(editandoId) : Date.now()
+        id: editandoId ? parseInt(editandoId, 10) : Date.now()
     };
 
     let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
+    let gradoAnterior = null;
 
     if (editandoId) {
         // Editar existente
-        const index = observaciones_list.findIndex(obs => obs.id === parseInt(editandoId));
+        const index = observaciones_list.findIndex(obs => Number(obs.id) === Number(editandoId));
         if (index !== -1) {
+            gradoAnterior = observaciones_list[index].grado;
             observaciones_list[index] = observacion;
+        } else {
+            observaciones_list.push(observacion);
         }
     } else {
         // Nueva
@@ -1141,7 +1147,7 @@ function guardarObservacion() {
     localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
 
     // Guardar también en Firebase
-    guardarObservacionFirebase(observacion, !!editandoId);
+    guardarObservacionFirebase(observacion, !!editandoId, gradoAnterior);
 
     showMessage(editandoId ? "Observación editada correctamente" : "Observación guardada correctamente", "success");
 
@@ -1463,7 +1469,6 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
-
 
 
 
