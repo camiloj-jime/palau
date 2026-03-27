@@ -23,6 +23,7 @@ let ultimoAutoSaveTimestamp = 0;
 let guardandoAsistenciaFirebase = false;
 let pendienteGuardarAsistencia = false;
 let datosPendientesAsistencia = null;
+let cargandoAsistencia = false; // evita auto-save concurrente al cargar
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -388,7 +389,11 @@ function getAsistenciaFromTable() {
 
         for (let d = 0; d < days; d++) {
             const select = tabla.rows[i].cells[2 + d].querySelector("select");
-            estados.push(select && estadosConfig[select.value] ? select.value : "P");
+            if (select && estadosConfig[select.value]) {
+                estados.push(select.value);
+            } else {
+                estados.push(""); // Dejar vacío para no asumir P automáticamente.
+            }
         }
 
         datos.push({ nombre, estados });
@@ -420,6 +425,14 @@ async function autoSave() {
 }
 
 async function guardarAsistenciaFirebase(datos) {
+    if (cargandoAsistencia) {
+        // No guardar mientras estamos cargando. Al menos se hará con el siguiente cambio.
+        console.log("guardarAsistenciaFirebase: ignorado, carga en curso");
+        pendienteGuardarAsistencia = true;
+        datosPendientesAsistencia = datos;
+        return;
+    }
+
     // Si ya hay un guardado en curso, mantenemos sólo el último registro para evitar solapamientos.
     if (guardandoAsistenciaFirebase) {
         pendienteGuardarAsistencia = true;
@@ -480,7 +493,7 @@ async function guardarAsistenciaFirebase(datos) {
             // Normalizar estados: debe ser array con la longitud correcta
             const days = currentDaysCount();
             const estados = Array.isArray(row.estados) ? row.estados.slice(0, days) : [];
-            while (estados.length < days) estados.push('P');
+            while (estados.length < days) estados.push(''); // mantener blank si no hay valor
 
             estudiantesPorNombre.set(row.nombre, {
                 nombre: row.nombre,
@@ -587,7 +600,7 @@ async function cargarAsistenciaFirebase() {
         // Validar valores
         if (!anio || !mes || !salon) {
             console.warn("cargarAsistenciaFirebase: Faltan valores");
-            return null;
+            return { existe: false, estudiantes: [] };
         }
 
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
@@ -596,7 +609,7 @@ async function cargarAsistenciaFirebase() {
 
         if (!window.db || !window.getDoc || !window.doc) {
             console.error("cargarAsistenciaFirebase: Firebase no está disponible");
-            return null;
+            return { existe: false, estudiantes: [] };
         }
 
         const docRef = window.doc(window.db, "asistencia", docId);
@@ -606,15 +619,15 @@ async function cargarAsistenciaFirebase() {
             const data = docSnap.data();
             console.log("✅ Datos cargados de Firebase:", data);
             console.log("Estudiantes encontrados:", data.estudiantes ? data.estudiantes.length : 0);
-            return data.estudiantes;
+            return { existe: true, estudiantes: Array.isArray(data.estudiantes) ? data.estudiantes : [] };
         } else {
             console.log("⚠️ No hay datos en Firebase para docId:", docId);
-            return null;
+            return { existe: false, estudiantes: [] };
         }
     } catch (error) {
         console.error("❌ Error al cargar asistencia de Firebase:", error);
         console.error("Detalles:", error.message, error.code);
-        return null;
+        return { existe: false, estudiantes: [] };
     }
 }
 
@@ -628,64 +641,72 @@ async function cargarSilent() {
     const key = clave();
     console.log("📂 cargarSilent: Iniciando carga con clave:", key);
 
-    // Intentar cargar de Firebase primero
-    console.log("🔍 cargarSilent: Buscando datos en Firebase...");
-    const datosFirebase = await cargarAsistenciaFirebase();
-    
-    if (datosFirebase && datosFirebase.length > 0) {
-        console.log("✅ cargarSilent: Datos encontrados en Firebase, cargando en tabla");
-        cargarEstudiantesEnTabla(datosFirebase);
-        localStorage.setItem(key, JSON.stringify(datosFirebase));
-        actualizar();
-        escucharActualizacionesFirebase();
-        return;
-    }
+    cargandoAsistencia = true;
+    try {
+        // Intentar cargar de Firebase primero
+        console.log("🔍 cargarSilent: Buscando datos en Firebase...");
+        const datosFirebase = await cargarAsistenciaFirebase();
 
-    // Si no hay en Firebase, intentar de localStorage
-    console.log("🔍 cargarSilent: Buscando datos en localStorage...");
-    const datosLocal = JSON.parse(localStorage.getItem(key));
-    
-    if (datosLocal && datosLocal.length > 0) {
-        console.log("✅ cargarSilent: Datos encontrados en localStorage, cargando en tabla");
-        cargarEstudiantesEnTabla(datosLocal);
-        // Subir a Firebase si no estaba
-        guardarAsistenciaFirebase(datosLocal);
-        actualizar();
-        escucharActualizacionesFirebase();
-        return;
-    }
+        if (datosFirebase.existe) {
+            console.log("✅ cargarSilent: Documento existente en Firebase, cargando en tabla");
+            cargarEstudiantesEnTabla(datosFirebase.estudiantes);
+            localStorage.setItem(key, JSON.stringify(datosFirebase.estudiantes));
+            actualizar();
+            escucharActualizacionesFirebase();
+            return;
+        }
 
-    // Si no hay datos, cargar estudiantes de Firebase para inicializar
-    console.log("ℹ️ cargarSilent: Sin asistencia previa, cargando estudiantes del grado");
-    const estudiantesFirebase = await cargarEstudiantes();
-    if (estudiantesFirebase.length > 0) {
-        buildHeaders();
-        contador = 0;
+        // Si no hay documento en Firebase, intentar de localStorage
+        console.log("🔍 cargarSilent: Buscando datos en localStorage...");
+        const datosLocal = JSON.parse(localStorage.getItem(key));
 
-        estudiantesFirebase.forEach(d => {
-            contador++;
-            const fila = tabla.insertRow();
-            fila.insertCell(0).innerText = contador;
-            fila.insertCell(1).innerText = d.nombre;
+        if (datosLocal && datosLocal.length > 0) {
+            console.log("✅ cargarSilent: Datos encontrados en localStorage, cargando en tabla");
+            cargarEstudiantesEnTabla(datosLocal);
+            await guardarAsistenciaFirebase(datosLocal); // sincronizar rápidamente
+            actualizar();
+            escucharActualizacionesFirebase();
+            return;
+        }
 
-            const days = currentDaysCount();
-            for (let i = 0; i < days; i++) {
-                const celda = fila.insertCell();
-                celda.innerHTML = `
-                <div class="estado-container">
-                    <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
-                    ${createSelectOptions()}
-                    </select>
-                    <span class="estado-label">-</span>
-                </div>
-                `;
-            }
+        // Si no hay datos, cargar estudiantes de Firebase para inicializar
+        console.log("ℹ️ cargarSilent: Sin asistencia previa, cargando estudiantes del grado");
+        const estudiantesFirebase = await cargarEstudiantes();
+        if (estudiantesFirebase.length > 0) {
+            buildHeaders();
+            contador = 0;
 
-            fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
-        });
+            estudiantesFirebase.forEach(d => {
+                contador++;
+                const fila = tabla.insertRow();
+                fila.insertCell(0).innerText = contador;
+                fila.insertCell(1).innerText = d.nombre;
 
-        actualizar();
-        escucharActualizacionesFirebase();
+                const days = currentDaysCount();
+                for (let i = 0; i < days; i++) {
+                    const celda = fila.insertCell();
+                    celda.innerHTML = `
+                    <div class="estado-container">
+                        <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+                        ${createSelectOptions()}
+                        </select>
+                        <span class="estado-label">-</span>
+                    </div>
+                    `;
+                }
+
+                fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
+            });
+
+            // Guardar la estructura inicial (sin estados) para mantener registro
+            const inicial = getAsistenciaFromTable();
+            if (inicial.length > 0) await guardarAsistenciaFirebase(inicial);
+
+            actualizar();
+            escucharActualizacionesFirebase();
+        }
+    } finally {
+        cargandoAsistencia = false;
     }
 }
 
@@ -715,8 +736,9 @@ function cargarEstudiantesEnTabla(dados) {
             `;
 
             const select = celda.querySelector("select");
-            const valorEstado = d.estados && d.estados[i] ? d.estados[i] : 'P';
-            select.value = estadosConfig[valorEstado] ? valorEstado : 'P';
+            const valorEstado = d.estados && d.estados[i] ? d.estados[i] : '';
+            // Si no hay estado guardado, dejamos sin valor para mostrar campo vacío
+            select.value = estadosConfig[valorEstado] ? valorEstado : '';
             actualizarColor(select);
         }
 
@@ -1546,6 +1568,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
