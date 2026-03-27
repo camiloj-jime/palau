@@ -20,6 +20,9 @@ const estadosConfig = {
 let tabla = null;
 let contador = 0;
 let ultimoAutoSaveTimestamp = 0;
+let guardandoAsistenciaFirebase = false;
+let pendienteGuardarAsistencia = false;
+let datosPendientesAsistencia = null;
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -417,6 +420,15 @@ async function autoSave() {
 }
 
 async function guardarAsistenciaFirebase(datos) {
+    // Si ya hay un guardado en curso, mantenemos sólo el último registro para evitar solapamientos.
+    if (guardandoAsistenciaFirebase) {
+        pendienteGuardarAsistencia = true;
+        datosPendientesAsistencia = datos;
+        console.log("guardarAsistenciaFirebase: guardado en curso, marcando pendiente");
+        return;
+    }
+
+    guardandoAsistenciaFirebase = true;
     try {
         const anio = document.getElementById("anio").value;
         const mes = document.getElementById("mes").value;
@@ -458,6 +470,15 @@ async function guardarAsistenciaFirebase(datos) {
         console.error("Detalles del error:", error.message, error.code);
         showMessage("Error al guardar en Firebase: " + error.message, "error", 3000);
         return false;
+    } finally {
+        guardandoAsistenciaFirebase = false;
+        if (pendienteGuardarAsistencia && datosPendientesAsistencia) {
+            console.log("guardarAsistenciaFirebase: ejecutando guardado pendiente");
+            pendienteGuardarAsistencia = false;
+            const seguir = datosPendientesAsistencia;
+            datosPendientesAsistencia = null;
+            await guardarAsistenciaFirebase(seguir);
+        }
     }
 }
 
@@ -684,13 +705,13 @@ function buildHeaders() {
     tabla.innerHTML = headerHtml;
 }
 
-function onPeriodoChange() {
+async function onPeriodoChange() {
     // Guardar estado actual antes de cambiar.
-    autoSave();
+    await autoSave();
 
     // Actualiza días de la cabecera y carga datos del mes/salón seleccionado.
     buildHeaders();
-    cargarSilent();
+    await cargarSilent();
 }
 
 function inicializar() {
