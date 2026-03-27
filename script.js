@@ -324,6 +324,9 @@ function actualizarColor(select) {
     select.style.textShadow = "none";
     select.title = label;
 
+    // Log de cambio para debug de Firebase
+    console.log("actualizarColor:", { fila: select.closest('tr')?.rowIndex, columna: select.closest('td')?.cellIndex, codigo });
+
     // Actualizar el label visual con solo las iniciales
      const container = select.parentElement;
     const labelSpan = container.querySelector('.estado-label');
@@ -387,12 +390,16 @@ function autoSave() {
 
         const estados = [];
 
+        console.log("autoSave: fila", i, "estudiante", nombre);
+
         for (let d = 0; d < days; d++) {
 
             let valor = tabla.rows[i].cells[2 + d].querySelector("select").value;
 
             // 👇 Cambia de inasistencia a presente por defecto si está vacío
             if (valor === "") valor = "P";
+
+            console.log(`autoSave: estudiante=${nombre}, dia=${d + 1}, valor=${valor}`);
 
             estados.push(valor);
         }
