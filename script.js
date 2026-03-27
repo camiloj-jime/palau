@@ -19,6 +19,7 @@ const estadosConfig = {
 
 let tabla = null;
 let contador = 0;
+let ultimoAutoSaveTimestamp = 0;
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -347,14 +348,13 @@ function actualizar() {
     const days = currentDaysCount();
 
     for (let i = 1; i < tabla.rows.length; i++) {
-
         for (let d = 0; d < days; d++) {
-
             const estado = tabla.rows[i].cells[2 + d].querySelector("select").value;
-
-            if (estado === "I") ausentes++;
-
-            if (estado === "P") presentes++;
+            if (estado === "P") {
+                presentes++;
+            } else if (estado) {
+                ausentes++;
+            }
         }
     }
 
@@ -372,46 +372,48 @@ function clave() {
     return anio + mes + salon;
 }
 
-function autoSave() {
-    if (!tabla) tabla = document.getElementById("tabla");
-    if (!tabla) return;
-
-    const key = clave();
-
-    if (!key) return;
-
+function getAsistenciaFromTable() {
     const datos = [];
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return datos;
 
     const days = currentDaysCount();
 
     for (let i = 1; i < tabla.rows.length; i++) {
-
         const nombre = tabla.rows[i].cells[1].innerText;
-
         const estados = [];
 
-        console.log("autoSave: fila", i, "estudiante", nombre);
-
         for (let d = 0; d < days; d++) {
-
-            let valor = tabla.rows[i].cells[2 + d].querySelector("select").value;
-
-            // 👇 Cambia de inasistencia a presente por defecto si está vacío
-            if (valor === "") valor = "P";
-
-            console.log(`autoSave: estudiante=${nombre}, dia=${d + 1}, valor=${valor}`);
-
-            estados.push(valor);
+            const select = tabla.rows[i].cells[2 + d].querySelector("select");
+            estados.push(select && estadosConfig[select.value] ? select.value : "P");
         }
 
         datos.push({ nombre, estados });
     }
 
+    return datos;
+}
+
+async function autoSave() {
+    if (!tabla) tabla = document.getElementById("tabla");
+    if (!tabla) return;
+
+    const key = clave();
+    if (!key) return;
+
+    ultimoAutoSaveTimestamp = Date.now();
+
+    const datos = getAsistenciaFromTable();
+
     console.log("autoSave: Guardando datos localmente", datos);
     localStorage.setItem(key, JSON.stringify(datos));
 
     // También guardar en Firebase
-    guardarAsistenciaFirebase(datos);
+    try {
+        await guardarAsistenciaFirebase(datos);
+    } catch (error) {
+        console.error("autoSave: Error guardando en Firebase", error);
+    }
 }
 
 async function guardarAsistenciaFirebase(datos) {
@@ -450,10 +452,12 @@ async function guardarAsistenciaFirebase(datos) {
 
         console.log("✅ Asistencia guardada en Firebase para:", salon, mes, anio);
         showMessage("Asistencia guardada en Firebase ✓", "success", 1500);
+        return true;
     } catch (error) {
         console.error("❌ Error al guardar asistencia en Firebase:", error);
         console.error("Detalles del error:", error.message, error.code);
         showMessage("Error al guardar en Firebase: " + error.message, "error", 3000);
+        return false;
     }
 }
 
@@ -478,7 +482,20 @@ function escucharActualizacionesFirebase() {
                 const data = docSnap.data();
                 console.log("Asistencia actualizada en tiempo real:", data);
 
-                // Recargar la tabla con los nuevos datos si es necesario
+                // Ignorar actualización muy cercana a autoSave local para evitar rebotes
+                const diff = Date.now() - ultimoAutoSaveTimestamp;
+                if (ultimoAutoSaveTimestamp && diff < 2000) {
+                    console.log(`snapshot ignorado por autoSave local reciente (${diff}ms)`);
+                    return;
+                }
+
+                // Si datos locales ya están sincronizados, no recargar
+                const currentData = getAsistenciaFromTable();
+                if (JSON.stringify(currentData) === JSON.stringify(data.estudiantes)) {
+                    console.log("datos locales ya sincronizados con snapshot");
+                    return;
+                }
+
                 if (data.estudiantes && data.estudiantes.length > 0) {
                     cargarEstudiantesEnTabla(data.estudiantes);
                     actualizar();
@@ -614,7 +631,8 @@ function cargarEstudiantesEnTabla(dados) {
         fila.insertCell(0).innerText = contador;
         fila.insertCell(1).innerText = d.nombre;
 
-        d.estados.forEach(e => {
+        const days = currentDaysCount();
+        for (let i = 0; i < days; i++) {
             const celda = fila.insertCell();
             celda.innerHTML = `
             <div class="estado-container">
@@ -626,10 +644,10 @@ function cargarEstudiantesEnTabla(dados) {
             `;
 
             const select = celda.querySelector("select");
-            select.value = e || 'P';
-            if (!select.value) select.value = 'P';
+            const valorEstado = d.estados && d.estados[i] ? d.estados[i] : 'P';
+            select.value = estadosConfig[valorEstado] ? valorEstado : 'P';
             actualizarColor(select);
-        });
+        }
 
         fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
     });
@@ -1469,6 +1487,9 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
+
+
 
 
 
