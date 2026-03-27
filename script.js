@@ -463,23 +463,17 @@ async function cargarAsistenciaFirebase() {
 
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
 
-        console.log("Intentando cargar asistencia de Firebase con docId:", docId);
-
         const docRef = window.doc(window.db, "asistencia", docId);
 
         const docSnap = await window.getDoc(docRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            console.log("Datos cargados de Firebase:", data);
             return data.estudiantes;
         } else {
-            console.log("No hay datos en Firebase para", docId);
             return null;
         }
-
     } catch (error) {
-        console.error("Error al cargar asistencia de Firebase:", error);
         return null;
     }
 }
@@ -641,6 +635,13 @@ function inicializar() {
         buildHeaders();
         verificarSesion();
         cargarSilent();
+
+        // Auto-guardado periódico cada 30 segundos para asegurar persistencia
+        setInterval(() => {
+            if (tabla && tabla.rows.length > 1) { // Solo si hay estudiantes
+                autoSave();
+            }
+        }, 30000);
     }
 }
 
@@ -1399,6 +1400,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
