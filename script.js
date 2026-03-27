@@ -38,7 +38,7 @@ function getStateColor(code) {
 }
 
 function createSelectOptions() {
-    let html = '<option value="I">Inasistencia</option>';
+    let html = '<option value="P">Presente</option>';
     Object.keys(estadosConfig).forEach(code => {
         html += `<option value="${code}" data-code="${code}">${estadosConfig[code].label}</option>`;
     });
@@ -343,7 +343,7 @@ function actualizar() {
 
             const estado = tabla.rows[i].cells[2 + d].querySelector("select").value;
 
-            if (estado === "I" || estado === "") ausentes++;
+            if (estado === "I") ausentes++;
 
             if (estado === "P") presentes++;
         }
@@ -385,8 +385,8 @@ function autoSave() {
 
             let valor = tabla.rows[i].cells[2 + d].querySelector("select").value;
 
-            // 👇 AQUÍ ESTÁ LA SOLUCIÓN REAL
-            if (valor === "") valor = "I";
+            // 👇 Cambia de inasistencia a presente por defecto si está vacío
+            if (valor === "") valor = "P";
 
             estados.push(valor);
         }
