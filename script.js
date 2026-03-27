@@ -389,6 +389,7 @@ function autoSave() {
         datos.push({ nombre, estados });
     }
 
+    console.log("autoSave: Guardando datos localmente", datos);
     localStorage.setItem(key, JSON.stringify(datos));
 
     // También guardar en Firebase
@@ -401,10 +402,23 @@ async function guardarAsistenciaFirebase(datos) {
         const mes = document.getElementById("mes").value;
         const salon = document.getElementById("salon").value;
 
-        // Crear un ID único para este grado/mes/año
+        // Validar que tenemos los valores necesarios
+        if (!anio || !mes || !salon) {
+            console.warn("guardarAsistenciaFirebase: Faltan valores - Año:", anio, "Mes:", mes, "Salón:", salon);
+            return;
+        }
+
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
 
-        // Usar setDoc para actualizar/crear el documento (no addDoc)
+        console.log("guardarAsistenciaFirebase: Intentando guardar con docId:", docId);
+        console.log("guardarAsistenciaFirebase: Datos a guardar:", datos);
+
+        // Verificar que window.db existe
+        if (!window.db) {
+            console.error("guardarAsistenciaFirebase: window.db no está disponible");
+            return;
+        }
+
         const docRef = window.doc(window.db, "asistencia", docId);
 
         await window.setDoc(docRef, {
@@ -416,9 +430,12 @@ async function guardarAsistenciaFirebase(datos) {
             docId: docId
         });
 
-        console.log("Asistencia guardada en Firebase para", salon, mes, anio);
+        console.log("✅ Asistencia guardada en Firebase para:", salon, mes, anio);
+        showMessage("Asistencia guardada en Firebase ✓", "success", 1500);
     } catch (error) {
-        console.error("Error al guardar asistencia en Firebase:", error);
+        console.error("❌ Error al guardar asistencia en Firebase:", error);
+        console.error("Detalles del error:", error.message, error.code);
+        showMessage("Error al guardar en Firebase: " + error.message, "error", 3000);
     }
 }
 
@@ -461,34 +478,57 @@ async function cargarAsistenciaFirebase() {
         const mes = document.getElementById("mes").value;
         const salon = document.getElementById("salon").value;
 
+        // Validar valores
+        if (!anio || !mes || !salon) {
+            console.warn("cargarAsistenciaFirebase: Faltan valores");
+            return null;
+        }
+
         const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
 
-        const docRef = window.doc(window.db, "asistencia", docId);
+        console.log("cargarAsistenciaFirebase: Intentando cargar con docId:", docId);
 
+        if (!window.db || !window.getDoc || !window.doc) {
+            console.error("cargarAsistenciaFirebase: Firebase no está disponible");
+            return null;
+        }
+
+        const docRef = window.doc(window.db, "asistencia", docId);
         const docSnap = await window.getDoc(docRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
+            console.log("✅ Datos cargados de Firebase:", data);
+            console.log("Estudiantes encontrados:", data.estudiantes ? data.estudiantes.length : 0);
             return data.estudiantes;
         } else {
+            console.log("⚠️ No hay datos en Firebase para docId:", docId);
             return null;
         }
     } catch (error) {
+        console.error("❌ Error al cargar asistencia de Firebase:", error);
+        console.error("Detalles:", error.message, error.code);
         return null;
     }
 }
 
 async function cargarSilent() {
     if (!tabla) tabla = document.getElementById("tabla");
-    if (!tabla) return;
+    if (!tabla) {
+        console.error("cargarSilent: tabla no encontrada");
+        return;
+    }
 
     const key = clave();
+    console.log("📂 cargarSilent: Iniciando carga con clave:", key);
 
     // Intentar cargar de Firebase primero
+    console.log("🔍 cargarSilent: Buscando datos en Firebase...");
     const datosFirebase = await cargarAsistenciaFirebase();
+    
     if (datosFirebase && datosFirebase.length > 0) {
+        console.log("✅ cargarSilent: Datos encontrados en Firebase, cargando en tabla");
         cargarEstudiantesEnTabla(datosFirebase);
-        // Guardar en localStorage también para respaldo
         localStorage.setItem(key, JSON.stringify(datosFirebase));
         actualizar();
         escucharActualizacionesFirebase();
@@ -496,8 +536,11 @@ async function cargarSilent() {
     }
 
     // Si no hay en Firebase, intentar de localStorage
+    console.log("🔍 cargarSilent: Buscando datos en localStorage...");
     const datosLocal = JSON.parse(localStorage.getItem(key));
+    
     if (datosLocal && datosLocal.length > 0) {
+        console.log("✅ cargarSilent: Datos encontrados en localStorage, cargando en tabla");
         cargarEstudiantesEnTabla(datosLocal);
         // Subir a Firebase si no estaba
         guardarAsistenciaFirebase(datosLocal);
@@ -507,10 +550,11 @@ async function cargarSilent() {
     }
 
     // Si no hay datos, cargar estudiantes de Firebase para inicializar
+    console.log("ℹ️ cargarSilent: Sin asistencia previa, cargando estudiantes del grado");
     const estudiantesFirebase = await cargarEstudiantes();
     if (estudiantesFirebase.length > 0) {
-        buildHeaders();  // ← LIMPIA TABLA
-        contador = 0;    // ← REINICIA CONTADOR
+        buildHeaders();
+        contador = 0;
 
         estudiantesFirebase.forEach(d => {
             contador++;
@@ -1400,6 +1444,8 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
+
 
 
 
