@@ -38,7 +38,7 @@ function getStateColor(code) {
 }
 
 function createSelectOptions() {
-    let html = '<option value="">-</option>';
+    let html = '<option value="I">Inasistencia</option>';
     Object.keys(estadosConfig).forEach(code => {
         html += `<option value="${code}" data-code="${code}">${estadosConfig[code].label}</option>`;
     });
@@ -343,7 +343,7 @@ function actualizar() {
 
             const estado = tabla.rows[i].cells[2 + d].querySelector("select").value;
 
-            if (estado === "I") ausentes++;
+            if (estado === "I" || estado === "") ausentes++;
 
             if (estado === "P") presentes++;
         }
@@ -383,7 +383,12 @@ function autoSave() {
 
         for (let d = 0; d < days; d++) {
 
-            estados.push(tabla.rows[i].cells[2 + d].querySelector("select").value);
+            let valor = tabla.rows[i].cells[2 + d].querySelector("select").value;
+
+            // 👇 AQUÍ ESTÁ LA SOLUCIÓN REAL
+            if (valor === "") valor = "I";
+
+            estados.push(valor);
         }
 
         datos.push({ nombre, estados });
@@ -1444,7 +1449,6 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
-
 
 
 
