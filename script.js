@@ -20,6 +20,19 @@ const estadosConfig = {
 let tabla = null;
 let contador = 0;
 
+function showMessage(text, type = 'success', duration = 2200) {
+    const message = document.getElementById('message');
+    if (!message) return;
+
+    message.textContent = text;
+    message.className = 'message ' + type;
+    message.style.display = 'block';
+
+    setTimeout(() => {
+        message.style.display = 'none';
+    }, duration);
+}
+
 function getStateColor(code) {
     return estadosConfig[code]?.color || "#ffffff";
 }
@@ -44,7 +57,7 @@ function login() {
         document.getElementById("login").style.display = "none";
         document.getElementById("panel").style.display = "block";
     } else {
-        alert("Datos incorrectos");
+        showMessage("Datos incorrectos", "error");
     }
 }
 
@@ -72,7 +85,7 @@ function verificarSesion() {
 function agregar() {
     if (!tabla) tabla = document.getElementById("tabla");
     if (!tabla) {
-        alert("Error: tabla no encontrada");
+        showMessage("Error: tabla no encontrada", "error");
         return;
     }
 
@@ -123,10 +136,10 @@ async function guardarDatos(){
             mensaje: document.getElementById("mensaje").value,
             fecha: new Date()
         });
-        alert("Datos guardados correctamente en Firebase");
+        showMessage("Datos guardados correctamente en Firebase", "success");
     } catch (error) {
         console.error("Error al guardar:", error);
-        alert("Error al guardar los datos");
+        showMessage("Error al guardar los datos", "error");
     }
 }
 
@@ -137,10 +150,94 @@ async function guardarEstudiante(nombre, grado) {
             grado: grado,
             fechaRegistro: new Date()
         });
-        alert("Estudiante guardado correctamente en Firebase");
+        showMessage("Estudiante guardado correctamente en Firebase", "success");
     } catch (error) {
         console.error("Error al guardar estudiante:", error);
-        alert("Error al guardar el estudiante");
+        showMessage("Error al guardar el estudiante", "error");
+    }
+}
+
+async function eliminarObservacionesEstudianteFirebase(nombre, grado) {
+    try {
+        const docRef = window.doc(window.db, "observaciones", grado);
+        const docSnap = await window.getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const registros = Array.isArray(data.registros) ? data.registros : [];
+            const nuevos = registros.filter(obs => obs.estudiante !== nombre);
+
+            if (nuevos.length !== registros.length) {
+                await window.setDoc(docRef, {
+                    grado: grado,
+                    registros: nuevos,
+                    fechaActualizacion: new Date().getTime()
+                });
+                console.log("Observaciones del estudiante eliminadas en Firebase:", nombre, grado);
+            }
+        }
+    } catch (error) {
+        console.error("Error al eliminar observaciones del estudiante en Firebase:", error);
+    }
+}
+
+async function eliminarEstudianteFirebase(nombre, grado) {
+    try {
+        const q = window.query(
+            window.collection(window.db, "estudiantes"),
+            window.where("nombre", "==", nombre),
+            window.where("grado", "==", grado)
+        );
+        const querySnapshot = await window.getDocs(q);
+
+        for (const docSnap of querySnapshot.docs) {
+            await window.deleteDoc(window.doc(window.db, "estudiantes", docSnap.id));
+        }
+
+        // Eliminar asistencia del estudiante en todos los documentos de asistencia del mismo grado
+        const qAsistencia = window.query(
+            window.collection(window.db, "asistencia"),
+            window.where("grado", "==", grado)
+        );
+        const asistenciaSnapshot = await window.getDocs(qAsistencia);
+
+        for (const docSnap of asistenciaSnapshot.docs) {
+            const asistenciaData = docSnap.data();
+            const estudiantes = Array.isArray(asistenciaData.estudiantes) ? asistenciaData.estudiantes : [];
+            const nuevos = estudiantes.filter(est => est.nombre !== nombre);
+
+            if (nuevos.length !== estudiantes.length) {
+                await window.setDoc(window.doc(window.db, "asistencia", docSnap.id), {
+                    ...asistenciaData,
+                    estudiantes: nuevos,
+                    fechaActualizacion: new Date().getTime()
+                });
+            }
+        }
+
+        // Eliminar observaciones del estudiante
+        await eliminarObservacionesEstudianteFirebase(nombre, grado);
+
+        console.log("Estudiante eliminado en Firebase:", nombre, grado);
+    } catch (error) {
+        console.error("Error al eliminar estudiante en Firebase:", error);
+    }
+}
+
+async function eliminarEstudiantesPorCurso(grado) {
+    try {
+        const q = window.query(
+            window.collection(window.db, "estudiantes"),
+            window.where("grado", "==", grado)
+        );
+        const querySnapshot = await window.getDocs(q);
+
+        for (const docSnap of querySnapshot.docs) {
+            await window.deleteDoc(window.doc(window.db, "estudiantes", docSnap.id));
+        }
+        console.log("Estudiantes eliminados en Firebase curso:", grado);
+    } catch (error) {
+        console.error("Error al eliminar estudiantes por curso en Firebase:", error);
     }
 }
 
@@ -172,11 +269,17 @@ async function cargarEstudiantes() {
     }
 }
 
-function eliminarFila(btn) {
+async function eliminarFila(btn) {
     if (!tabla) tabla = document.getElementById("tabla");
     if (!tabla) return;
 
     const fila = btn.parentNode.parentNode;
+    const nombre = fila.cells[1]?.innerText || "";
+    const grado = document.getElementById("salon").value;
+
+    if (!confirm(`¿Estás seguro de eliminar al estudiante ${nombre}? Esto también eliminará al estudiante de Firebase.`)) {
+        return;
+    }
 
     tabla.deleteRow(fila.rowIndex);
 
@@ -185,6 +288,10 @@ function eliminarFila(btn) {
     actualizar();
 
     autoSave();
+
+    if (nombre) {
+        await eliminarEstudianteFirebase(nombre, grado);
+    }
 }
 
 function renumerar() {
@@ -606,14 +713,14 @@ function bulkAdd() {
     const lista = document.getElementById("listaEstudiantes").value.trim();
 
     if (!lista) {
-        alert("Por favor escribe los nombres en la lista");
+        showMessage("Por favor escribe los nombres en la lista", "warning");
         return;
     }
 
     const nombres = lista.split('\n').filter(n => n.trim().length > 0);
 
     if (nombres.length === 0) {
-        alert("No hay nombres válidos para agregar");
+        showMessage("No hay nombres válidos para agregar", "warning");
         return;
     }
 
@@ -623,18 +730,18 @@ function bulkAdd() {
     });
 
     document.getElementById("listaEstudiantes").value = "";
-    alert(`Se agregaron ${nombres.length} estudiantes`);
+    showMessage(`Se agregaron ${nombres.length} estudiantes`, "success");
 }
 
 function guardar() {
     autoSave();
-    alert("Datos guardados correctamente");
+    showMessage("Datos guardados correctamente", "success");
 }
 
 function exportar() {
     if (!tabla) tabla = document.getElementById("tabla");
     if (!tabla) {
-        alert("Error: tabla no encontrada");
+        showMessage("Error: tabla no encontrada", "error");
         return;
     }
 
@@ -766,25 +873,26 @@ function clearTable() {
     }
 }
 
-function eliminarTodosCurso() {
+async function eliminarTodosCurso() {
     if (!tabla) tabla = document.getElementById("tabla");
     if (!tabla) return;
 
     const salon = document.getElementById("salon").value;
 
     if (!salon) {
-        alert("Por favor selecciona un salón primero");
+        showMessage("Por favor selecciona un salón primero", "warning");
         return;
     }
 
     if (confirm(`¿Estás seguro de que quieres eliminar TODOS los estudiantes del ${salon}?`)) {
         const key = clave();
         localStorage.removeItem(key);
+        await eliminarEstudiantesPorCurso(salon);
         buildHeaders();
         contador = 0;
         actualizar();
         llenarSelectorEstudiantes();
-        alert(`Se han eliminado todos los estudiantes del ${salon}`);
+        showMessage(`Se han eliminado todos los estudiantes del ${salon}`, "success");
     }
 }
 
@@ -941,7 +1049,7 @@ function guardarObservacion() {
     const observaciones = document.getElementById("obsObservaciones").value.trim();
 
     if (!estudiante || !fecha) {
-        alert("Por favor completa al menos el nombre del estudiante y la fecha");
+        showMessage("Por favor completa al menos el nombre del estudiante y la fecha", "warning");
         return;
     }
 
@@ -971,7 +1079,7 @@ function guardarObservacion() {
     // Guardar también en Firebase
     guardarObservacionFirebase(observacion, !!editandoId);
 
-    alert(editandoId ? "Observación editada correctamente" : "Observación guardada correctamente");
+    showMessage(editandoId ? "Observación editada correctamente" : "Observación guardada correctamente", "success");
 
     document.getElementById("obsEstudiante").value = "";
     document.getElementById("obsGrado").value = "";
@@ -1108,7 +1216,7 @@ async function exportarObservaciones() {
 
     if (observaciones_list.length === 0) {
 
-        alert("No hay observaciones para exportar");
+        showMessage("No hay observaciones para exportar", "info");
 
         return;
     }
@@ -1118,7 +1226,7 @@ async function exportarObservaciones() {
     if (cursoSeleccionado) {
         observaciones_list = observaciones_list.filter(obs => obs.grado === cursoSeleccionado);
         if (observaciones_list.length === 0) {
-            alert(`No hay observaciones para el curso ${cursoSeleccionado}`);
+            showMessage(`No hay observaciones para el curso ${cursoSeleccionado}`, "info");
             return;
         }
     }
@@ -1242,7 +1350,7 @@ function mostrarConteoCurso() {
     const curso = document.getElementById("searchCurso").value;
 
     if (!curso) {
-        alert("Por favor selecciona un curso");
+        showMessage("Por favor selecciona un curso", "warning");
         return;
     }
 
