@@ -38,7 +38,7 @@ function getStateColor(code) {
 }
 
 function createSelectOptions() {
-    let html = '<option value="P">Presente</option>';
+    let html = '';
     Object.keys(estadosConfig).forEach(code => {
         html += `<option value="${code}" data-code="${code}">${estadosConfig[code].label}</option>`;
     });
@@ -114,6 +114,12 @@ function agregar() {
             <span class="estado-label">-</span>
         </div>
         `;
+
+        const select = celda.querySelector('select');
+        if (select) {
+            select.value = 'P';
+            actualizarColor(select);
+        }
     }
 
     const acciones = fila.insertCell();
@@ -613,7 +619,8 @@ function cargarEstudiantesEnTabla(dados) {
             `;
 
             const select = celda.querySelector("select");
-            select.value = e;
+            select.value = e || 'P';
+            if (!select.value) select.value = 'P';
             actualizarColor(select);
         });
 
@@ -1449,6 +1456,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
