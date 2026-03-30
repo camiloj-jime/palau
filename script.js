@@ -24,6 +24,7 @@ let guardandoAsistenciaFirebase = false;
 let pendienteGuardarAsistencia = false;
 let datosPendientesAsistencia = null;
 let cargandoAsistencia = false; // evita auto-save concurrente al cargar
+let periodoActual = null; // guarda el periodo previo para onPeriodoChange
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -113,7 +114,7 @@ function agregar() {
 
         celda.innerHTML = `
         <div class="estado-container">
-            <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+            <select onchange="actualizarColor(this);actualizar()" class="estado">
             ${createSelectOptions()}
             </select>
             <span class="estado-label">-</span>
@@ -313,8 +314,6 @@ async function eliminarFila(btn) {
 
     actualizar();
 
-    autoSave();
-
     if (nombre) {
         await eliminarEstudianteFirebase(nombre, grado);
     }
@@ -469,7 +468,7 @@ async function autoSave() {
     }
 }
 
-async function guardarAsistenciaFirebase(datos) {
+async function guardarAsistenciaFirebase(datos, docIdOverride = null) {
     if (cargandoAsistencia) {
         // No guardar mientras estamos cargando. Al menos se hará con el siguiente cambio.
         console.log("guardarAsistenciaFirebase: ignorado, carga en curso");
@@ -504,7 +503,7 @@ async function guardarAsistenciaFirebase(datos) {
             return;
         }
 
-        const docId = getAsistenciaDocId();
+        const docId = docIdOverride || getAsistenciaDocId();
 
         if (!docId) {
             console.warn("guardarAsistenciaFirebase: Periodo inválido, no se guarda.");
@@ -723,7 +722,7 @@ async function cargarSilent() {
                     const celda = fila.insertCell();
                     celda.innerHTML = `
                     <div class="estado-container">
-                        <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+                        <select onchange="actualizarColor(this);actualizar()" class="estado">
                         ${createSelectOptions()}
                         </select>
                         <span class="estado-label">-</span>
@@ -734,9 +733,11 @@ async function cargarSilent() {
                 fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
             });
 
-            // Guardar la estructura inicial (sin estados) para mantener registro
+            // Guardar la estructura inicial (sin estados) en localStorage para mantener registro, no escribir Firestore hasta guardado manual
             const inicial = getAsistenciaFromTable();
-            if (inicial.length > 0) await guardarAsistenciaFirebase(inicial);
+            if (inicial.length > 0) {
+                localStorage.setItem(key, JSON.stringify(inicial));
+            }
 
             actualizar();
             escucharActualizacionesFirebase();
@@ -764,7 +765,7 @@ function cargarEstudiantesEnTabla(dados) {
             const celda = fila.insertCell();
             celda.innerHTML = `
             <div class="estado-container">
-                <select onchange="actualizarColor(this);autoSave();actualizar()" class="estado">
+                <select onchange="actualizarColor(this);actualizar()" class="estado">
                 ${createSelectOptions()}
                 </select>
                 <span class="estado-label">-</span>
@@ -814,10 +815,18 @@ function buildHeaders() {
 }
 
 async function onPeriodoChange() {
-    // Guardar estado actual antes de cambiar, solo si hay filas con datos.
-    if (tabla && tabla.rows.length > 1) {
-        await autoSave();
+    const nuevoPeriodo = getPeriodoClave();
+
+    // Guardar estado del periodo previo antes de cambiar (local únicamente, evitar confusión de guardado automático)
+    if (tabla && tabla.rows.length > 1 && periodoActual && periodoActual !== nuevoPeriodo) {
+        const datosPrevios = getAsistenciaFromTable();
+        if (datosPrevios && datosPrevios.length > 0) {
+            localStorage.setItem(periodoActual, JSON.stringify(datosPrevios));
+            console.log(`onPeriodoChange: guardado local periodo previo ${periodoActual}`);
+        }
     }
+
+    periodoActual = nuevoPeriodo;
 
     // Actualiza días de la cabecera y carga datos del mes/salón seleccionado.
     buildHeaders();
@@ -844,16 +853,11 @@ function inicializar() {
         anioSelect.addEventListener("change", onPeriodoChange);
         document.getElementById("salon").addEventListener("change", onPeriodoChange);
 
+        periodoActual = getPeriodoClave();
+
         buildHeaders();
         verificarSesion();
         cargarSilent();
-
-        // Auto-guardado periódico cada 30 segundos para asegurar persistencia
-        setInterval(() => {
-            if (tabla && tabla.rows.length > 1) { // Solo si hay estudiantes
-                autoSave();
-            }
-        }, 30000);
     }
 }
 
@@ -1082,7 +1086,6 @@ function clearTable() {
             }
         }
         actualizar();
-        autoSave();
     }
 }
 
@@ -1604,6 +1607,9 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
+
+
 
 
 
