@@ -382,14 +382,35 @@ function actualizar() {
     document.getElementById("ausentes").innerText = ausentes;
 }
 
+function normalizeMes(mes) {
+    if (!mes) return null;
+    return mes.trim().toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/\s+/g, '-');
+}
+
 function getPeriodoClave() {
     const anio = document.getElementById("anio").value;
-    const mesIndex = document.getElementById("mes").selectedIndex + 1;
+    const mes = document.getElementById("mes").value;
     const salon = document.getElementById("salon").value;
 
-    if (!anio || !mesIndex || !salon) return null;
+    if (!anio || !mes || !salon) return null;
 
-    return `${anio}-${String(mesIndex).padStart(2, '0')}-${salon}`;
+    const mesSlug = normalizeMes(mes);
+
+    return `${anio}-${mesSlug}-${salon}`;
+}
+
+function getPeriodoClaveLegacy() {
+    // Formato anterior (sin separadores): año + mes + salon
+    const anio = document.getElementById("anio").value;
+    const mes = document.getElementById("mes").value;
+    const salon = document.getElementById("salon").value;
+
+    if (!anio || !mes || !salon) return null;
+
+    return `${anio}${mes}${salon}`;
 }
 
 function getAsistenciaDocId() {
@@ -439,6 +460,10 @@ async function autoSave() {
 
     console.log("autoSave: Guardando datos localmente", datos);
     localStorage.setItem(key, JSON.stringify(datos));
+    const legacyKey = getPeriodoClaveLegacy();
+    if (legacyKey && legacyKey !== key) {
+        localStorage.setItem(legacyKey, JSON.stringify(datos));
+    }
 
     // También guardar en Firebase
     try {
@@ -675,7 +700,8 @@ async function cargarSilent() {
     }
 
     const key = getPeriodoClave();
-    console.log("📂 cargarSilent: Iniciando carga con clave:", key);
+    const legacyKey = getPeriodoClaveLegacy();
+    console.log("📂 cargarSilent: Iniciando carga con clave:", key, "(legacy:", legacyKey, ")");
 
     // Limpiar tabla y actualizar cabecera para periodo
     buildHeaders();
@@ -698,7 +724,14 @@ async function cargarSilent() {
 
         // Si no hay documento en Firebase, intentar de localStorage
         console.log("🔍 cargarSilent: Buscando datos en localStorage...");
-        const datosLocal = JSON.parse(localStorage.getItem(key));
+        let datosLocal = JSON.parse(localStorage.getItem(key));
+        if ((!datosLocal || datosLocal.length === 0) && legacyKey) {
+            datosLocal = JSON.parse(localStorage.getItem(legacyKey));
+            if (datosLocal && datosLocal.length > 0) {
+                console.log("🔄 cargarSilent: Datos encontrados en localStorage legacy, migrando a clave nueva", legacyKey);
+                localStorage.setItem(key, JSON.stringify(datosLocal));
+            }
+        }
 
         if (datosLocal && datosLocal.length > 0) {
             console.log("✅ cargarSilent: Datos encontrados en localStorage, cargando en tabla");
@@ -1607,7 +1640,8 @@ function mostrarConteoCurso() {
     buildHeaders();
     verificarSesion();
     await cargarSilent();
-})()
+})();
+
 
 
 
