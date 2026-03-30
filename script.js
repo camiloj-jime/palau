@@ -155,7 +155,22 @@ async function guardarDatos(){
 }
 
 async function guardarEstudiante(nombre, grado) {
+    if (!nombre || !grado) return;
+
     try {
+        // Evitar duplicados en el mismo curso
+        const q = window.query(
+            window.collection(window.db, "estudiantes"),
+            window.where("nombre", "==", nombre),
+            window.where("grado", "==", grado)
+        );
+        const querySnapshot = await window.getDocs(q);
+
+        if (!querySnapshot.empty) {
+            console.log(`guardarEstudiante: El estudiante '${nombre}' ya existe en ${grado}`);
+            return;
+        }
+
         await window.addDoc(window.collection(window.db, "estudiantes"), {
             nombre: nombre,
             grado: grado,
@@ -367,13 +382,22 @@ function actualizar() {
     document.getElementById("ausentes").innerText = ausentes;
 }
 
-function clave() {
-
+function getPeriodoClave() {
     const anio = document.getElementById("anio").value;
-    const mes = document.getElementById("mes").value;
+    const mesIndex = document.getElementById("mes").selectedIndex + 1;
     const salon = document.getElementById("salon").value;
 
-    return anio + mes + salon;
+    if (!anio || !mesIndex || !salon) return null;
+
+    return `${anio}-${String(mesIndex).padStart(2, '0')}-${salon}`;
+}
+
+function getAsistenciaDocId() {
+    return getPeriodoClave();
+}
+
+function clave() {
+    return getPeriodoClave();
 }
 
 function getAsistenciaFromTable() {
@@ -459,7 +483,12 @@ async function guardarAsistenciaFirebase(datos) {
             return;
         }
 
-        const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
+        const docId = getAsistenciaDocId();
+
+        if (!docId) {
+            console.warn("guardarAsistenciaFirebase: Periodo inválido, no se guarda.");
+            return;
+        }
 
         console.log("guardarAsistenciaFirebase: Intentando guardar con docId:", docId);
         console.log("guardarAsistenciaFirebase: Datos a guardar:", datos);
@@ -549,10 +578,12 @@ let unsubscribe = null;
 
 function escucharActualizacionesFirebase() {
     try {
-        const anio = document.getElementById("anio").value;
-        const mes = document.getElementById("mes").value;
-        const salon = document.getElementById("salon").value;
-        const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
+        const docId = getAsistenciaDocId();
+
+        if (!docId) {
+            console.warn("escucharActualizacionesFirebase: No hay periodo definido");
+            return;
+        }
 
         // Cancelar escucha anterior si existe
         if (unsubscribe) {
@@ -603,7 +634,12 @@ async function cargarAsistenciaFirebase() {
             return { existe: false, estudiantes: [] };
         }
 
-        const docId = `${anio}-${mes.toLowerCase()}-${salon}`;
+        const docId = getAsistenciaDocId();
+
+        if (!docId) {
+            console.warn("cargarAsistenciaFirebase: Periodo inválido");
+            return { existe: false, estudiantes: [] };
+        }
 
         console.log("cargarAsistenciaFirebase: Intentando cargar con docId:", docId);
 
@@ -638,8 +674,12 @@ async function cargarSilent() {
         return;
     }
 
-    const key = clave();
+    const key = getPeriodoClave();
     console.log("📂 cargarSilent: Iniciando carga con clave:", key);
+
+    // Limpiar tabla y actualizar cabecera para periodo
+    buildHeaders();
+    contador = 0;
 
     cargandoAsistencia = true;
     try {
@@ -1567,7 +1607,7 @@ function mostrarConteoCurso() {
     buildHeaders();
     verificarSesion();
     await cargarSilent();
-})();
+})()
 
 
 
