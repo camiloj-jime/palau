@@ -1186,13 +1186,12 @@ async function guardarObservacionFirebase(observacion, isEdit = false, gradoAnte
         }
 
         const observacionId = Number(observacion.id);
-        const index = registros.findIndex(obs => Number(obs.id) === observacionId);
 
-        if (index !== -1) {
-            registros[index] = observacion;
-        } else {
-            registros.push(observacion);
-        }
+        // Eliminar cualquier registro previo con el mismo ID para evitar duplicados.
+        registros = registros.filter(obs => Number(obs.id) !== observacionId);
+
+        // Agregar el registro actualizado (o nuevo si no existía)
+        registros.push(observacion);
 
         // Guardar de vuelta
         await window.setDoc(docRef, {
@@ -1283,22 +1282,20 @@ function guardarObservacion() {
     let gradoAnterior = null;
 
     if (editandoId) {
-        // Editar existente
+        // Editar existente si está en la lista local
         const index = observaciones_list.findIndex(obs => Number(obs.id) === Number(editandoId));
         if (index !== -1) {
             gradoAnterior = observaciones_list[index].grado;
-            observaciones_list[index] = observacion;
-        } else {
-            observaciones_list.push(observacion);
         }
-    } else {
-        // Nueva
-        observaciones_list.push(observacion);
     }
+
+    // Reemplazar o agregar sin duplicados donde el ID coincide
+    observaciones_list = observaciones_list.filter(obs => Number(obs.id) !== Number(observacion.id));
+    observaciones_list.push(observacion);
 
     localStorage.setItem("observaciones", JSON.stringify(observaciones_list));
 
-    // Guardar también en Firebase
+    // Guardar también en Firebase (si editando, se indica con el ID existente)
     guardarObservacionFirebase(observacion, !!editandoId, gradoAnterior);
 
     showMessage(editandoId ? "Observación editada correctamente" : "Observación guardada correctamente", "success");
