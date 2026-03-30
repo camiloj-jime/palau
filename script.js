@@ -25,6 +25,7 @@ let pendienteGuardarAsistencia = false;
 let datosPendientesAsistencia = null;
 let cargandoAsistencia = false; // evita auto-save concurrente al cargar
 let periodoActual = null; // guarda el periodo previo para onPeriodoChange
+let observacionEditandoId = null; // ID de observación en edición
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -1270,12 +1271,12 @@ function guardarObservacion() {
         return;
     }
 
-    const editandoId = document.getElementById("editandoId") ? document.getElementById("editandoId").value : "";
+    const editandoId = observacionEditandoId;
 
     const observacion = {
         estudiante, grado, fecha, docente, desempeno, llamados,
         anotaciones, acciones, ficha, sanciones, compromiso, observaciones,
-        id: editandoId ? parseInt(editandoId, 10) : Date.now()
+        id: editandoId ? Number(editandoId) : Date.now()
     };
 
     let observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
@@ -1312,7 +1313,8 @@ function guardarObservacion() {
     document.getElementById("obsSanciones").value = "";
     document.getElementById("obsCompromiso").value = "";
     document.getElementById("obsObservaciones").value = "";
-    if (document.getElementById("editandoId")) document.getElementById("editandoId").value = "";
+
+    observacionEditandoId = null;
 
     cargarObservaciones();
 }
@@ -1393,7 +1395,7 @@ function eliminarObservacion(id, grado) {
 
 function editarObservacion(id) {
     const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
-    const obs = observaciones_list.find(o => o.id === id);
+    const obs = observaciones_list.find(o => Number(o.id) === Number(id));
     if (!obs) return;
 
     // Llenar el formulario
@@ -1410,17 +1412,8 @@ function editarObservacion(id) {
     document.getElementById("obsCompromiso").value = obs.compromiso;
     document.getElementById("obsObservaciones").value = obs.observaciones;
 
-    // Setear ID de edición
-    if (document.getElementById("editandoId")) {
-        document.getElementById("editandoId").value = id;
-    } else {
-        // Si no existe, crearlo
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.id = "editandoId";
-        input.value = id;
-        document.querySelector("form").appendChild(input);
-    }
+    // Setear ID de edición global
+    observacionEditandoId = Number(id);
 }
 
 async function exportarObservaciones() {
