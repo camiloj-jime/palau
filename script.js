@@ -134,7 +134,7 @@ function agregar() {
     document.getElementById("nombreEstudiante").value = "";
 
     actualizar();
-    autoSave();
+    // No autoSave en agregar para evitar que los estudiantes se mezclen de curso antes de que el usuario confirme con Guardar
     llenarSelectorEstudiantes();
 
     const grado = document.getElementById("salon").value;
@@ -460,10 +460,6 @@ async function autoSave() {
 
     console.log("autoSave: Guardando datos localmente", datos);
     localStorage.setItem(key, JSON.stringify(datos));
-    const legacyKey = getPeriodoClaveLegacy();
-    if (legacyKey && legacyKey !== key) {
-        localStorage.setItem(legacyKey, JSON.stringify(datos));
-    }
 
     // También guardar en Firebase
     try {
@@ -526,49 +522,16 @@ async function guardarAsistenciaFirebase(datos) {
 
         const docRef = window.doc(window.db, "asistencia", docId);
 
-        // Cargar estudiantes registrados del curso para preservar a todos
-        const estudiantesCurso = await cargarEstudiantes(); // all matching grado
-        const estudiantesPorNombre = new Map();
-
-        // Cargar datos previos de Firebase para mantener estados históricos y evitar pérdidas
-        const docSnap = await window.getDoc(docRef);
-        if (docSnap.exists()) {
-            const prev = docSnap.data().estudiantes || [];
-            prev.forEach(item => {
-                if (item && item.nombre) {
-                    estudiantesPorNombre.set(item.nombre, item);
-                }
-            });
-        }
-
-        // Actualizar con las filas actuales de la tabla
-        datos.forEach(row => {
-            if (!row || !row.nombre) return;
-            // Normalizar estados: debe ser array con la longitud correcta
-            const days = currentDaysCount();
+        // Guardar exactamente los datos actuales de la tabla del periodo seleccionado
+        const days = currentDaysCount();
+        const estudiantesFinal = datos.map(row => {
             const estados = Array.isArray(row.estados) ? row.estados.slice(0, days) : [];
-            while (estados.length < days) estados.push(''); // mantener blank si no hay valor
-
-            estudiantesPorNombre.set(row.nombre, {
+            while (estados.length < days) estados.push('');
+            return {
                 nombre: row.nombre,
                 estados
-            });
+            };
         });
-
-        // Añadir alumnos del curso que no estén aún en la tabla (por seguridad)
-        const days = currentDaysCount();
-        estudiantesCurso.forEach(est => {
-            const nombre = est.nombre;
-            if (!nombre) return;
-            if (!estudiantesPorNombre.has(nombre)) {
-                estudiantesPorNombre.set(nombre, {
-                    nombre,
-                    estados: Array(days).fill('P')
-                });
-            }
-        });
-
-        const estudiantesFinal = Array.from(estudiantesPorNombre.values());
 
         await window.setDoc(docRef, {
             anio: anio,
@@ -577,7 +540,7 @@ async function guardarAsistenciaFirebase(datos) {
             estudiantes: estudiantesFinal,
             fechaActualizacion: new Date().getTime(),
             docId: docId
-        }, { merge: true });
+        });
 
         console.log("✅ Asistencia guardada en Firebase para:", salon, mes, anio);
         showMessage("Asistencia guardada en Firebase ✓", "success", 1500);
@@ -1641,6 +1604,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
