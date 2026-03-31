@@ -100,6 +100,9 @@ window.getDoc = getDoc;
 <button onclick="guardarObservacion()">Guardar Observación</button>
 
 <button onclick="exportarObservaciones()">Descargar Observaciones</button>
+<button onclick="exportarObservaciones('curso')">Descargar por curso</button>
+<button onclick="exportarObservaciones('estudiante')">Descargar por nombre</button>
+<button onclick="exportarObservaciones('fecha')">Descargar por fecha</button>
 
 <button onclick="volverAsistenciaConSesion()">Volver a Asistencia</button>
 
@@ -275,6 +278,7 @@ if (!sessionStorage.getItem("usuarioLogueado")) {
 
 </body>
 </html>
+
 
 
 
