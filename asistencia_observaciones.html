@@ -103,6 +103,15 @@ window.getDoc = getDoc;
 
 <button onclick="volverAsistenciaConSesion()">Volver a Asistencia</button>
 
+<h4>Filtrar por fecha y curso</h4>
+
+<label style="font-weight:600; margin-right:8px;">Desde:</label>
+<input id="fechaInicioFiltro" type="date" style="margin-right:12px;" />
+<label style="font-weight:600; margin-right:8px;">Hasta:</label>
+<input id="fechaFinFiltro" type="date" style="margin-right:12px;" />
+<button onclick="cargarObservaciones()" style="margin-right:10px;">Aplicar Filtros</button>
+<button id="toggleObservacionesBtn" onclick="toggleObservacionesVisibility()" style="margin-bottom:10px;">Ocultar observaciones</button>
+
 <h4>Buscar por curso</h4>
 
 <select id="searchCurso">
