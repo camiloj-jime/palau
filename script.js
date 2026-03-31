@@ -1529,152 +1529,94 @@ function editarObservacion(id) {
     observacionEditandoId = Number(id);
 }
 
-async function exportarObservaciones() {
-
-    // Cargar desde Firebase primero
+async function exportarObservaciones(modo = "") {
     let observaciones_list = await cargarObservacionesFirebase();
 
-    // Si no hay datos en Firebase, usar localStorage
     if (!observaciones_list || observaciones_list.length === 0) {
         observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
     }
 
     if (observaciones_list.length === 0) {
-
         showMessage("No hay observaciones para exportar", "info");
-
         return;
     }
 
-    // Aplicar filtros de curso y fechas
-    const todosFiltrados = filtrarObservacionesList(observaciones_list);
     const cursoSeleccionado = document.getElementById("searchCurso").value;
-    const observacionesFiltradas = todosFiltrados; // ya incluye curso
+    const estudianteSeleccionado = document.getElementById("searchEstudianteInput").value.trim();
+    const desde = document.getElementById("fechaInicioFiltro").value;
+    const hasta = document.getElementById("fechaFinFiltro").value;
+
+    if (modo === "curso" && !cursoSeleccionado) {
+        showMessage("Selecciona un curso para descargar por curso", "warning");
+        return;
+    }
+
+    if (modo === "estudiante" && !estudianteSeleccionado) {
+        showMessage("Escribe un nombre para descargar por estudiante", "warning");
+        return;
+    }
+
+    if (modo === "fecha" && !desde && !hasta) {
+        showMessage("Selecciona desde y/o hasta para descargar por fecha", "warning");
+        return;
+    }
+
+    const observacionesFiltradas = filtrarObservacionesList(observaciones_list);
 
     if (observacionesFiltradas.length === 0) {
-        if (cursoSeleccionado || document.getElementById("fechaInicioFiltro").value || document.getElementById("fechaFinFiltro").value) {
-            showMessage("No hay observaciones que cumplan los filtros seleccionados", "info");
-        } else {
-            showMessage("No hay observaciones para exportar", "info");
-        }
+        showMessage("No hay observaciones que cumplan los filtros seleccionados", "info");
         return;
     }
 
-    // Usar la lista filtrada para exportar
-    observaciones_list = observacionesFiltradas;
-
     const ahora = new Date();
-
     const mesNombre = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][ahora.getMonth()];
-
     const anioActual = ahora.getFullYear();
 
     let titulo = `Observaciones ${mesNombre} ${anioActual}`;
     let nombreArchivo = `observaciones_${mesNombre}_${anioActual}.html`;
-    if (cursoSeleccionado) {
+
+    if (modo === "curso") {
         titulo += ` - Curso ${cursoSeleccionado}`;
         nombreArchivo = `observaciones_${cursoSeleccionado}_${mesNombre}_${anioActual}.html`;
+    } else if (modo === "estudiante") {
+        titulo += ` - Estudiante ${estudianteSeleccionado}`;
+        nombreArchivo = `observaciones_${estudianteSeleccionado.replace(/\s+/g, "_")}_${mesNombre}_${anioActual}.html`;
+    } else if (modo === "fecha") {
+        const fechaLabel = `${desde || "inicio"}_${hasta || "fin"}`;
+        titulo += ` - Fecha ${fechaLabel}`;
+        nombreArchivo = `observaciones_fecha_${fechaLabel}_${mesNombre}_${anioActual}.html`;
+    } else {
+        if (cursoSeleccionado) {
+            titulo += ` - Curso ${cursoSeleccionado}`;
+            nombreArchivo = `observaciones_${cursoSeleccionado}_${mesNombre}_${anioActual}.html`;
+        }
+        if (estudianteSeleccionado) {
+            nombreArchivo = `observaciones_${estudianteSeleccionado.replace(/\s+/g, "_")}_${mesNombre}_${anioActual}.html`;
+        }
+        if (desde || hasta) {
+            const fechaLabel = `${desde || "inicio"}_${hasta || "fin"}`;
+            nombreArchivo = `observaciones_fecha_${fechaLabel}_${mesNombre}_${anioActual}.html`;
+        }
     }
 
-    let html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Observaciones ${mesNombre} ${anioActual}</title>
-    <style>
-        * { margin: 0; padding: 0; }
-        body { font-family: Arial, Calibri, sans-serif; background: white; }
-        .no-print { display: block; padding: 20px; text-align: center; background: #f0f0f0; border-bottom: 2px solid #333; }
-        .no-print button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
-        .no-print button:hover { background: #1d4ed8; }
-        .content { padding: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h2 { margin: 10px 0; color: #1e3a8a; font-size: 18px; font-weight: bold; }
-        .header p { margin: 5px 0; font-size: 13px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 11px; }
-        th { background-color: #2563eb; color: white; font-weight: bold; height: 25px; }
-        td { padding: 8px; }
-        .pie { margin-top: 20px; font-size: 10px; text-align: center; color: #999; }
-        @media print {
-            .no-print { display: none; }
-            body { padding: 0; }
-            .content { padding: 15px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="no-print">
-        <button onclick="window.print()">🖨️ IMPRIMIR</button>
-    </div>
-    <div class="content">
-        <div class="header">
-            <h2>OBSERVACIONES COLEGIO FRANCISCO PALAU Y QUER</h2>
-            <p><strong>Mes:</strong> ${mesNombre} | <strong>Año:</strong> ${anioActual}${cursoSeleccionado ? ` | <strong>Curso:</strong> ${cursoSeleccionado}` : ''}</p>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Estudiante</th>
-                    <th>Grado</th>
-                    <th>Fecha</th>
-                    <th>Docente</th>
-                    <th>Desempeño</th>
-                    <th>Llamados</th>
-                    <th>Anotaciones</th>
-                    <th>Acciones</th>
-                    <th>Ficha</th>
-                    <th>Sanciones</th>
-                    <th>Compromiso</th>
-                    <th>Observaciones</th>
-                </tr>
-            </thead>
-            <tbody>`;
+    let html = `<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>${titulo}</title>\n<style>* { margin: 0; padding: 0; } body { font-family: Arial, Calibri, sans-serif; background: white; } .no-print { display: block; padding: 20px; text-align: center; background: #f0f0f0; border-bottom: 2px solid #333; } .no-print button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; } .no-print button:hover { background: #1d4ed8; } .content { padding: 20px; } .header { text-align: center; margin-bottom: 30px; } .header h2 { margin: 10px 0; color: #1e3a8a; font-size: 18px; font-weight: bold; } .header p { margin: 5px 0; font-size: 13px; } table { width: 100%; border-collapse: collapse; margin-top: 20px; } th, td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 11px; } th { background-color: #2563eb; color: white; font-weight: bold; height: 25px; } td { padding: 8px; } .pie { margin-top: 20px; font-size: 10px; text-align: center; color: #999; } @media print { .no-print { display: none; } body { padding: 0; } .content { padding: 15px; } }</style>\n</head>\n<body>\n<div class=\"no-print\"><button onclick=\"window.print()\">🖨️ IMPRIMIR</button></div>\n<div class=\"content\">\n<div class=\"header\"><h2>OBSERVACIONES COLEGIO FRANCISCO PALAU Y QUER</h2><p><strong>Mes:</strong> ${mesNombre} | <strong>Año:</strong> ${anioActual}${cursoSeleccionado ? ` | <strong>Curso:</strong> ${cursoSeleccionado}` : ''}${estudianteSeleccionado ? ` | <strong>Estudiante:</strong> ${estudianteSeleccionado}` : ''}${desde || hasta ? ` | <strong>Rango:</strong> ${desde || 'inicio'} - ${hasta || 'fin'}` : ''}</p></div>\n<table>\n<thead>\n<tr><th>Estudiante</th><th>Grado</th><th>Fecha</th><th>Docente</th><th>Desempeño</th><th>Llamados</th><th>Anotaciones</th><th>Acciones</th><th>Ficha</th><th>Sanciones</th><th>Compromiso</th><th>Observaciones</th></tr>\n</thead>\n<tbody>`;
 
-    observaciones_list.forEach(obs => {
-        const fecha = formatearFecha(obs.fecha);
-        html += `<tr>
-                    <td>${obs.estudiante}</td>
-                    <td>${obs.grado}</td>
-                    <td>${fecha}</td>
-                    <td>${obs.docente}</td>
-                    <td>${obs.desempeno}</td>
-                    <td>${obs.llamados}</td>
-                    <td>${obs.anotaciones}</td>
-                    <td>${obs.acciones}</td>
-                    <td>${obs.ficha}</td>
-                    <td>${obs.sanciones}</td>
-                    <td>${obs.compromiso}</td>
-                    <td>${obs.observaciones}</td>
-                </tr>`;
+    observacionesFiltradas.forEach(obs => {
+        const fechaObs = formatearFecha(obs.fecha);
+        const obsText = obs.observaciones || obs.anotaciones || obs.acciones || obs.ficha || obs.sanciones || obs.compromiso || "-";
+        html += `<tr><td>${obs.estudiante || ''}</td><td>${obs.grado || ''}</td><td>${fechaObs}</td><td>${obs.docente || ''}</td><td>${obs.desempeno || ''}</td><td>${obs.llamados || ''}</td><td>${obs.anotaciones || ''}</td><td>${obs.acciones || ''}</td><td>${obs.ficha || ''}</td><td>${obs.sanciones || ''}</td><td>${obs.compromiso || ''}</td><td>${obsText}</td></tr>`;
     });
 
-    html += `</tbody>
-        </table>
-        <div class="pie">
-            <p>Documento generado automáticamente - Colegio Francisco Palau y Quer</p>
-        </div>
-    </div>
-</body>
-</html>`;
+    html += `</tbody>\n</table>\n<div class=\"pie\"><p>Documento generado automáticamente - Colegio Francisco Palau y Quer</p></div>\n</div>\n</body>\n</html>`;
 
     const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
-
     const link = document.createElement("a");
-
     const url = URL.createObjectURL(blob);
-
     link.setAttribute("href", url);
-
     link.setAttribute("download", nombreArchivo);
-
     link.style.visibility = "hidden";
-
     document.body.appendChild(link);
-
     link.click();
-
     document.body.removeChild(link);
 }
 
