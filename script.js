@@ -26,6 +26,7 @@ let datosPendientesAsistencia = null;
 let cargandoAsistencia = false; // evita auto-save concurrente al cargar
 let periodoActual = null; // guarda el periodo previo para onPeriodoChange
 let observacionEditandoId = null; // ID de observación en edición
+let observacionesOcultas = false; // controla ocultar/mostrar lista de observaciones
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -1337,8 +1338,10 @@ async function cargarObservaciones() {
 
     const listaDiv = document.getElementById("listaObservaciones");
 
-    if (observaciones_list.length === 0) {
-        listaDiv.innerHTML = "<p>No hay observaciones registradas</p>";
+    const observacionesFiltradas = filtrarObservacionesList(observaciones_list);
+
+    if (observacionesFiltradas.length === 0) {
+        listaDiv.innerHTML = "<p>No hay observaciones registradas para los filtros aplicados</p>";
         return;
     }
 
@@ -1354,7 +1357,7 @@ async function cargarObservaciones() {
     html += "<th style='border: 1px solid #ddd; padding: 8px;'>Acción</th>";
     html += "</tr>";
 
-    observaciones_list.forEach(obs => {
+    observacionesFiltradas.forEach(obs => {
         html += "<tr style='background: #f9f9f9;'>";
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.estudiante}</td>`;
         html += `<td style='border: 1px solid #ddd; padding: 8px;'>${obs.grado}</td>`;
@@ -1376,6 +1379,60 @@ function formatearFecha(fecha) {
     if (!fecha) return "";
     const date = new Date(fecha + "T00:00:00");
     return date.toLocaleDateString("es-ES");
+}
+
+function parseDateString(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + "T00:00:00");
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function getFiltrosObservaciones() {
+    const curso = document.getElementById("searchCurso")?.value || "";
+    const desde = parseDateString(document.getElementById("fechaInicioFiltro")?.value);
+    const hasta = parseDateString(document.getElementById("fechaFinFiltro")?.value);
+
+    return { curso, desde, hasta };
+}
+
+function filtrarObservacionesList(observaciones_list) {
+    if (!Array.isArray(observaciones_list)) return [];
+
+    const { curso, desde, hasta } = getFiltrosObservaciones();
+
+    return observaciones_list.filter(obs => {
+        if (!obs || !obs.fecha) return false;
+
+        if (curso && obs.grado !== curso) {
+            return false;
+        }
+
+        const fechaObs = parseDateString(obs.fecha);
+        if (!fechaObs) return false;
+
+        if (desde && fechaObs < desde) {
+            return false;
+        }
+
+        if (hasta && fechaObs > hasta) {
+            return false;
+        }
+
+        return true;
+    });
+}
+
+function toggleObservacionesVisibility() {
+    const lista = document.getElementById("listaObservaciones");
+    const boton = document.getElementById("toggleObservacionesBtn");
+    const conteo = document.getElementById("conteoCurso");
+
+    observacionesOcultas = !observacionesOcultas;
+
+    if (lista) lista.style.display = observacionesOcultas ? "none" : "block";
+    if (conteo) conteo.style.display = observacionesOcultas ? "none" : "block";
+
+    if (boton) boton.textContent = observacionesOcultas ? "Mostrar observaciones" : "Ocultar observaciones";
 }
 
 function eliminarObservacion(id, grado) {
@@ -1433,15 +1490,22 @@ async function exportarObservaciones() {
         return;
     }
 
-    // Filtrar por curso si se selecciona uno
+    // Aplicar filtros de curso y fechas
+    const todosFiltrados = filtrarObservacionesList(observaciones_list);
     const cursoSeleccionado = document.getElementById("searchCurso").value;
-    if (cursoSeleccionado) {
-        observaciones_list = observaciones_list.filter(obs => obs.grado === cursoSeleccionado);
-        if (observaciones_list.length === 0) {
-            showMessage(`No hay observaciones para el curso ${cursoSeleccionado}`, "info");
-            return;
+    const observacionesFiltradas = todosFiltrados; // ya incluye curso
+
+    if (observacionesFiltradas.length === 0) {
+        if (cursoSeleccionado || document.getElementById("fechaInicioFiltro").value || document.getElementById("fechaFinFiltro").value) {
+            showMessage("No hay observaciones que cumplan los filtros seleccionados", "info");
+        } else {
+            showMessage("No hay observaciones para exportar", "info");
         }
+        return;
     }
+
+    // Usar la lista filtrada para exportar
+    observaciones_list = observacionesFiltradas;
 
     const ahora = new Date();
 
@@ -1567,10 +1631,23 @@ function mostrarConteoCurso() {
     }
 
     const observaciones_list = JSON.parse(localStorage.getItem("observaciones")) || [];
-    const conteo = observaciones_list.filter(obs => obs.grado === curso).length;
+    const observacionesFiltradas = observaciones_list.filter(obs => {
+        if (!obs || !obs.grado) return false;
+        if (obs.grado !== curso) return false;
+
+        const fromDate = parseDateString(document.getElementById("fechaInicioFiltro")?.value);
+        const toDate = parseDateString(document.getElementById("fechaFinFiltro")?.value);
+        const obsDate = parseDateString(obs.fecha);
+
+        if (!obsDate) return false;
+        if (fromDate && obsDate < fromDate) return false;
+        if (toDate && obsDate > toDate) return false;
+
+        return true;
+    });
 
     const conteDiv = document.getElementById("conteoCurso");
-    conteDiv.textContent = `Observaciones en ${curso}: ${conteo}`;
+    conteDiv.textContent = `Observaciones en ${curso}: ${observacionesFiltradas.length}`;
     conteDiv.style.display = "block";
 }
 
