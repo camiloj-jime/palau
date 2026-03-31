@@ -1439,7 +1439,18 @@ function actualizarSugerenciasEstudiante() {
         return;
     }
 
-    const matches = Object.keys(todosEstudiantes || {}).filter(n => n.toLowerCase().includes(query));
+    // Combina la lista de estudiantes conocidos con los nombres que aparecen ya en observaciones
+    const knownStudents = { ...(window.todosEstudiantes || {}) };
+    const observaciones = JSON.parse(localStorage.getItem("observaciones")) || [];
+    observaciones.forEach(obs => {
+        if (obs && obs.estudiante) {
+            knownStudents[obs.estudiante.trim()] = obs.grado || knownStudents[obs.estudiante.trim()] || "";
+        }
+    });
+
+    const matches = Object.keys(knownStudents)
+        .filter(n => n.toLowerCase().includes(query))
+        .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 
     if (matches.length === 0) {
         sugerencias.style.display = "none";
@@ -1449,7 +1460,7 @@ function actualizarSugerenciasEstudiante() {
 
     let html = "";
     matches.slice(0, 10).forEach(nombre => {
-        html += `<div style="padding:8px;cursor:pointer;border-bottom:1px solid #eee;" onclick="selectEstudianteSugerencia('${nombre}')">${nombre} (${todosEstudiantes[nombre] || ''})</div>`;
+        html += `<div style="padding:8px;cursor:pointer;border-bottom:1px solid #eee;" onclick="selectEstudianteSugerencia('${nombre.replace(/'/g, "\\'")}')">${nombre} (${knownStudents[nombre] || ''})</div>`;
     });
 
     sugerencias.innerHTML = html;
