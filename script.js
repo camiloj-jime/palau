@@ -1389,16 +1389,17 @@ function parseDateString(dateStr) {
 
 function getFiltrosObservaciones() {
     const curso = document.getElementById("searchCurso")?.value || "";
+    const estudiante = document.getElementById("searchEstudianteInput")?.value.trim().toLowerCase() || "";
     const desde = parseDateString(document.getElementById("fechaInicioFiltro")?.value);
     const hasta = parseDateString(document.getElementById("fechaFinFiltro")?.value);
 
-    return { curso, desde, hasta };
+    return { curso, estudiante, desde, hasta };
 }
 
 function filtrarObservacionesList(observaciones_list) {
     if (!Array.isArray(observaciones_list)) return [];
 
-    const { curso, desde, hasta } = getFiltrosObservaciones();
+    const { curso, estudiante, desde, hasta } = getFiltrosObservaciones();
 
     return observaciones_list.filter(obs => {
         if (!obs || !obs.fecha) return false;
@@ -1418,8 +1419,52 @@ function filtrarObservacionesList(observaciones_list) {
             return false;
         }
 
+        if (estudiante && (!obs.estudiante || !obs.estudiante.toLowerCase().includes(estudiante))) {
+            return false;
+        }
+
         return true;
     });
+}
+
+function actualizarSugerenciasEstudiante() {
+    const query = document.getElementById("searchEstudianteInput")?.value.trim().toLowerCase();
+    const sugerencias = document.getElementById("searchEstudianteSugerencias");
+
+    if (!sugerencias) return;
+
+    if (!query) {
+        sugerencias.style.display = "none";
+        sugerencias.innerHTML = "";
+        return;
+    }
+
+    const matches = Object.keys(todosEstudiantes || {}).filter(n => n.toLowerCase().includes(query));
+
+    if (matches.length === 0) {
+        sugerencias.style.display = "none";
+        sugerencias.innerHTML = "";
+        return;
+    }
+
+    let html = "";
+    matches.slice(0, 10).forEach(nombre => {
+        html += `<div style="padding:8px;cursor:pointer;border-bottom:1px solid #eee;" onclick="selectEstudianteSugerencia('${nombre}')">${nombre} (${todosEstudiantes[nombre] || ''})</div>`;
+    });
+
+    sugerencias.innerHTML = html;
+    sugerencias.style.display = "block";
+}
+
+function selectEstudianteSugerencia(nombre) {
+    document.getElementById("searchEstudianteInput").value = nombre;
+    document.getElementById("searchEstudianteSugerencias").style.display = "none";
+    cargarObservaciones();
+}
+
+function buscarObservacionesPorEstudiante() {
+    actualizarSugerenciasEstudiante();
+    cargarObservaciones();
 }
 
 function toggleObservacionesVisibility() {
@@ -1649,6 +1694,9 @@ function mostrarConteoCurso() {
     const conteDiv = document.getElementById("conteoCurso");
     conteDiv.textContent = `Observaciones en ${curso}: ${observacionesFiltradas.length}`;
     conteDiv.style.display = "block";
+
+    // También mostrar la lista de observaciones filtradas
+    cargarObservaciones();
 }
 
 // El cambio de periodo ya está manejado por onPeriodoChange() en inicializar().
