@@ -114,7 +114,7 @@ window.getDoc = getDoc;
 
 <h4>Buscar por curso</h4>
 
-<select id="searchCurso">
+<select id="searchCurso" onchange="cargarObservaciones()">
 
 <option value="">--Seleccionar curso--</option>
 
@@ -142,6 +142,13 @@ window.getDoc = getDoc;
 <button onclick="mostrarConteoCurso()">Contar observaciones</button>
 
 <div id="conteoCurso" class="message info" style="display:none; margin-top:10px;"></div>
+
+<h4>Buscar por estudiante</h4>
+
+<input id="searchEstudianteInput" placeholder="Buscar estudiante (nombre)" onkeyup="buscarObservacionesPorEstudiante()" style="width: calc(100% - 10px); padding: 8px; margin-bottom: 8px;" />
+<div id="searchEstudianteSugerencias" style="display:none; border: 1px solid #ccc; border-radius: 4px; max-height: 180px; overflow-y: auto; background: white;"></div>
+
+<button onclick="buscarObservacionesPorEstudiante()">Aplicar búsqueda por estudiante</button>
 
 <div id="listaObservaciones" style="margin-top:20px;"></div>
 
@@ -231,13 +238,13 @@ function filtrarEstudiantes(){
 }
 
 document.addEventListener("click",(e)=>{
-
-if(e.target.id!=="obsEstudiante"){
-
-document.getElementById("estudiantesSugerencias").style.display="none";
-
-}
-
+    if(e.target.id!=="obsEstudiante"){
+        document.getElementById("estudiantesSugerencias").style.display="none";
+    }
+    if(e.target.id!=="searchEstudianteInput"){
+        const se = document.getElementById("searchEstudianteSugerencias");
+        if (se) se.style.display = "none";
+    }
 });
 
 function volverAsistencia(){
@@ -268,5 +275,6 @@ if (!sessionStorage.getItem("usuarioLogueado")) {
 
 </body>
 </html>
+
 
 
