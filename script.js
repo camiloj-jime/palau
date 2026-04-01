@@ -1561,6 +1561,20 @@ async function exportarObservaciones(modo = "") {
         return;
     }
 
+    if (modo === "filtro" && !cursoSeleccionado && !estudianteSeleccionado && !desde && !hasta) {
+        showMessage("Selecciona al menos un filtro (curso, estudiante o fecha) para descargar", "warning");
+        return;
+    }
+
+    if (desde && hasta) {
+        const desdeDate = parseDateString(desde);
+        const hastaDate = parseDateString(hasta);
+        if (desdeDate && hastaDate && desdeDate > hastaDate) {
+            showMessage("La fecha de inicio no puede ser mayor que la fecha final", "warning");
+            return;
+        }
+    }
+
     const observacionesFiltradas = filtrarObservacionesList(observaciones_list);
 
     if (observacionesFiltradas.length === 0) {
@@ -1675,6 +1689,7 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
 
 
 
