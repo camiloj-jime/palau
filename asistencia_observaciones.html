@@ -99,12 +99,6 @@ window.getDoc = getDoc;
 
 <button onclick="guardarObservacion()">Guardar Observación</button>
 
-<button onclick="exportarObservaciones('filtro')">Descargar selección (curso + estudiante + fecha)</button>
-<button onclick="exportarObservaciones()">Descargar todas las observaciones</button>
-<button onclick="exportarObservaciones('curso')">Descargar por curso</button>
-<button onclick="exportarObservaciones('estudiante')">Descargar por nombre</button>
-<button onclick="exportarObservaciones('fecha')">Descargar por fecha</button>
-
 <button onclick="volverAsistenciaConSesion()">Volver a Asistencia</button>
 
 <h4>Filtrar por fecha y curso</h4>
@@ -153,6 +147,8 @@ window.getDoc = getDoc;
 <div id="searchEstudianteSugerencias" style="display:none; border: 1px solid #ccc; border-radius: 4px; max-height: 180px; overflow-y: auto; background: white;"></div>
 
 <button onclick="buscarObservacionesPorEstudiante()">Aplicar búsqueda por estudiante</button>
+
+<button onclick="exportarObservaciones('filtro')" style="margin-top:8px;">Descargar selección (curso + estudiante + fecha)</button>
 
 <div id="listaObservaciones" style="margin-top:20px;"></div>
 
