@@ -65,13 +65,33 @@ window.getDoc = getDoc;
 
 <div class="estudiante-container">
 
-<input id="obsEstudiante" placeholder="Escribir nombre del estudiante" onkeyup="filtrarEstudiantes()">
+<input id="obsEstudiante" placeholder="Escribir nombre del estudiante (opcional)" onkeyup="filtrarEstudiantes()">
 
 <div id="estudiantesSugerencias"></div>
 
 </div>
 
-<input id="obsGrado" placeholder="Grado" readonly>
+<select id="obsGrado">
+    <option value="">--Seleccionar curso--</option>
+    <option>Prescolar</option>
+    <option>1</option>
+    <option>2</option>
+    <option>3</option>
+    <option>4</option>
+    <option>5</option>
+    <option>6A</option>
+    <option>6B</option>
+    <option>7A</option>
+    <option>7B</option>
+    <option>8A</option>
+    <option>8B</option>
+    <option>9A</option>
+    <option>9B</option>
+    <option>10A</option>
+    <option>10B</option>
+    <option>11A</option>
+    <option>11B</option>
+</select>
 
 <input id="obsFecha" type="date">
 
