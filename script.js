@@ -1267,15 +1267,22 @@ function guardarObservacion() {
     const compromiso = document.getElementById("obsCompromiso").value.trim();
     const observaciones = document.getElementById("obsObservaciones").value.trim();
 
-    if (!estudiante || !fecha) {
-        showMessage("Por favor completa al menos el nombre del estudiante y la fecha", "warning");
+    if (!grado) {
+        showMessage("Por favor selecciona el curso", "warning");
         return;
     }
 
+    if (!fecha) {
+        showMessage("Por favor completa la fecha", "warning");
+        return;
+    }
+
+    const estudianteFinal = estudiante || "Todos los estudiantes";
     const editandoId = observacionEditandoId;
 
     const observacion = {
-        estudiante, grado, fecha, docente, desempeno, llamados,
+        estudiante: estudianteFinal,
+        grado, fecha, docente, desempeno, llamados,
         anotaciones, acciones, ficha, sanciones, compromiso, observaciones,
         id: editandoId ? Number(editandoId) : Date.now()
     };
