@@ -27,6 +27,7 @@ let cargandoAsistencia = false; // evita auto-save concurrente al cargar
 let periodoActual = null; // guarda el periodo previo para onPeriodoChange
 let observacionEditandoId = null; // ID de observación en edición
 let observacionesOcultas = false; // controla ocultar/mostrar lista de observaciones
+let telefonosCache = [];
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -864,9 +865,220 @@ function inicializar() {
 }
 
 window.addEventListener("DOMContentLoaded", inicializar);
+window.addEventListener("DOMContentLoaded", inicializarTelefonos);
 
 function abrirObservaciones(){
-window.location.href="asistencia_observaciones.html";
+    window.location.href="asistencia_observaciones.html";
+}
+
+function abrirTelefonos(){
+    window.location.href="telefonos.html";
+}
+
+function inicializarTelefonos() {
+    if (!document.getElementById("panelTelefono")) return;
+
+    document.getElementById("searchTelefonoInput").addEventListener("keyup", buscarTelefonos);
+    buscarTelefonos();
+}
+
+async function guardarTelefono() {
+    const nombre = document.getElementById("searchTelefonoInput")?.value.trim();
+    const etiqueta = document.getElementById("telefonoEtiqueta")?.value.trim();
+    const telefono = document.getElementById("telefonoNumero")?.value.trim();
+    const docId = document.getElementById("telefonoDocId")?.value;
+
+    if (!nombre || !etiqueta || !telefono) {
+        showMessage("Completa nombre, etiqueta y número", "warning");
+        return;
+    }
+
+    try {
+        if (!window.db) {
+            showMessage("Firebase no está disponible", "error");
+            return;
+        }
+
+        const nuevoTelefono = { etiqueta, numero: telefono };
+        let registroId = docId;
+
+        if (registroId) {
+            const docRef = window.doc(window.db, "estudiantes", registroId);
+            const docSnap = await window.getDoc(docRef);
+            const data = docSnap.exists() ? docSnap.data() : {};
+            const telefonos = Array.isArray(data.telefonos) ? [...data.telefonos] : [];
+            const existe = telefonos.some(t => t.numero === telefono && t.etiqueta.toLowerCase() === etiqueta.toLowerCase());
+            if (!existe) telefonos.push(nuevoTelefono);
+            await window.setDoc(docRef, {
+                nombre,
+                telefonos,
+                fechaActualizacion: new Date().getTime()
+            }, { merge: true });
+            showMessage("Teléfono guardado correctamente", "success");
+        } else {
+            const consulta = window.query(
+                window.collection(window.db, "estudiantes"),
+                window.where("nombre", "==", nombre)
+            );
+            const querySnapshot = await window.getDocs(consulta);
+
+            if (!querySnapshot.empty) {
+                const docSnap = querySnapshot.docs[0];
+                const data = docSnap.data();
+                const telefonos = Array.isArray(data.telefonos) ? [...data.telefonos] : [];
+                const existe = telefonos.some(t => t.numero === telefono && t.etiqueta.toLowerCase() === etiqueta.toLowerCase());
+                if (!existe) telefonos.push(nuevoTelefono);
+                await window.setDoc(window.doc(window.db, "estudiantes", docSnap.id), {
+                    telefonos,
+                    fechaActualizacion: new Date().getTime()
+                }, { merge: true });
+                registroId = docSnap.id;
+                showMessage("Teléfono guardado correctamente", "success");
+            } else {
+                const nuevoDoc = await window.addDoc(window.collection(window.db, "estudiantes"), {
+                    nombre,
+                    telefonos: [nuevoTelefono],
+                    fechaRegistro: new Date().getTime()
+                });
+                registroId = nuevoDoc.id;
+                showMessage("Teléfono guardado correctamente", "success");
+            }
+        }
+
+        document.getElementById("telefonoDocId").value = registroId || "";
+        document.getElementById("telefonoNumero").value = "";
+        document.getElementById("telefonoEtiqueta").value = "";
+        buscarTelefonos();
+    } catch (error) {
+        console.error("Error al guardar teléfono:", error);
+        showMessage("Error al guardar el teléfono", "error");
+    }
+}
+
+async function buscarTelefonos() {
+    if (!document.getElementById("panelTelefono")) return;
+
+    const filtro = document.getElementById("searchTelefonoInput")?.value.trim().toLowerCase();
+
+    try {
+        if (!window.db) {
+            showMessage("Firebase no está disponible", "error");
+            return;
+        }
+
+        const consulta = window.collection(window.db, "estudiantes");
+        const querySnapshot = await window.getDocs(consulta);
+        const estudiantes = [];
+
+        querySnapshot.forEach((docSnap) => {
+            estudiantes.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        const filtrados = filtro
+            ? estudiantes.filter(est => {
+                const nombre = (est.nombre || "").toLowerCase();
+                return nombre.includes(filtro);
+            })
+            : estudiantes;
+
+        telefonosCache = filtrados;
+        mostrarSugerencias(filtrados);
+        mostrarTelefonos(filtrados);
+
+        if (filtro && filtrados.length === 1) {
+            mostrarDatosEstudiante(filtrados[0]);
+        }
+    } catch (error) {
+        console.error("Error al buscar teléfonos:", error);
+        showMessage("Error al buscar teléfonos", "error");
+    }
+}
+
+function mostrarSugerencias(lista) {
+    const sugerencias = document.getElementById("sugerenciasTelefonos");
+    if (!sugerencias) return;
+
+    const filtro = document.getElementById("searchTelefonoInput")?.value.trim().toLowerCase();
+    if (!filtro || !Array.isArray(lista) || lista.length === 0) {
+        sugerencias.innerHTML = "";
+        sugerencias.style.display = "none";
+        return;
+    }
+
+    const nombresUnicos = [...new Set(lista.map(est => est.nombre || ""))].filter(Boolean).slice(0, 5);
+    if (nombresUnicos.length === 0) {
+        sugerencias.innerHTML = "";
+        sugerencias.style.display = "none";
+        return;
+    }
+
+    let html = "";
+    nombresUnicos.forEach(nombre => {
+        html += `<div class="sugerencia" onclick="seleccionarTelefono('${nombre.replace(/'/g, "\\'")}')">${nombre}</div>`;
+    });
+    sugerencias.innerHTML = html;
+    sugerencias.style.display = "block";
+}
+
+function seleccionarTelefono(nombre) {
+    document.getElementById("searchTelefonoInput").value = nombre;
+    document.getElementById("sugerenciasTelefonos").style.display = "none";
+    buscarTelefonos();
+}
+
+function mostrarTelefonos(lista) {
+    const tabla = document.getElementById("tablaTelefonos");
+    if (!tabla) return;
+
+    const tbody = tabla.querySelector("tbody");
+    tbody.innerHTML = "";
+
+    if (!Array.isArray(lista) || lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px;">No se encontraron registros</td></tr>`;
+        return;
+    }
+
+    lista.forEach((est, index) => {
+        const telefonos = Array.isArray(est.telefonos)
+            ? est.telefonos.map(t => `${t.etiqueta}: ${t.numero}`).join(', ')
+            : (est.telefono || '-');
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${est.nombre || "-"}</td>
+            <td>${telefonos}</td>
+            <td class="table-action">
+                <button onclick="editarTelefono('${est.id}')">Seleccionar</button>
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
+}
+
+function mostrarDatosEstudiante(est) {
+    if (!est) return;
+    document.getElementById("telefonoDocId").value = est.id;
+    document.getElementById("searchTelefonoInput").value = est.nombre || "";
+    document.getElementById("telefonoNumero").value = "";
+
+    const info = document.getElementById("telefonoInfo");
+    const telefonos = Array.isArray(est.telefonos) ? est.telefonos : (est.telefono ? [est.telefono] : []);
+
+    if (telefonos.length === 0) {
+        info.innerHTML = `<p>No hay números guardados para este estudiante.</p>`;
+    } else {
+        info.innerHTML = `
+            <div><strong>Números guardados:</strong></div>
+            <ul>${telefonos.map(t => `<li>${t.etiqueta ? t.etiqueta + ': ' : ''}${t.numero || t}</li>`).join('')}</ul>
+        `;
+    }
+}
+
+function editarTelefono(id) {
+    const estudiante = telefonosCache.find(est => est.id === id);
+    if (estudiante) {
+        mostrarDatosEstudiante(estudiante);
+    }
 }
 
 function filtrarEstudiantesAsistencia() {
@@ -1696,6 +1908,8 @@ function mostrarConteoCurso() {
     verificarSesion();
     await cargarSilent();
 })();
+
+
 
 
 
