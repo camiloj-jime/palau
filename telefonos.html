@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teléfonos Estudiantes - Colegio Francisco Palau y Quer</title>
+<link rel="icon" href="logo.jpg" type="image/jpeg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<img src="logo.jpg" alt="Logo" class="logo">
+<h1>Teléfonos de Estudiantes</h1>
+<p>Colegio Francisco Palau y Quer</p>
+</header>
+
+<div id="message" class="message"></div>
+
+<div class="panel" id="panelTelefono">
+<div class="controles">
+<label>Buscar por nombre</label>
+<div class="busqueda-container">
+  <input id="searchTelefonoInput" placeholder="Escribe nombre del estudiante" onkeyup="buscarTelefonos()">
+  <div id="sugerenciasTelefonos"></div>
+</div>
+<button onclick="buscarTelefonos()" class="btn-primary">Buscar</button>
+
+<div id="telefonoInfo" class="telefono-info"></div>
+
+<hr style="margin:20px 0; border-color:#dbe6f4;">
+
+<label>Nombre del contacto</label>
+<input id="telefonoEtiqueta" placeholder="Ej: Madre, Padre, Acudiente">
+
+<label>Agregar número</label>
+<input id="telefonoNumero" placeholder="Ej: 3201234567">
+
+<input type="hidden" id="telefonoDocId">
+
+<button onclick="guardarTelefono()" class="btn-secondary">Guardar teléfono</button>
+<button onclick="volverAsistenciaConSesion()" class="btn-logout">Volver a Asistencia</button>
+</div>
+
+<div class="tabla-container">
+<table id="tablaTelefonos">
+<thead>
+<tr>
+<th>#</th>
+<th>Nombre</th>
+<th>Teléfonos</th>
+<th>Acudiente</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+
+<script type="module" src="firebase.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
