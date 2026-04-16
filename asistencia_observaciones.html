@@ -123,12 +123,18 @@ window.getDoc = getDoc;
 
 <h4>Filtrar por fecha y curso</h4>
 
-<label style="font-weight:600; margin-right:8px;">Desde:</label>
-<input id="fechaInicioFiltro" type="date" style="margin-right:12px;" />
-<label style="font-weight:600; margin-right:8px;">Hasta:</label>
-<input id="fechaFinFiltro" type="date" style="margin-right:12px;" />
-<button onclick="cargarObservaciones()" style="margin-right:10px;">Aplicar Filtros</button>
-<button id="toggleObservacionesBtn" onclick="toggleObservacionesVisibility()" style="margin-bottom:10px;">Ocultar observaciones</button>
+<div class="botones-grid">
+    <div>
+        <label>Desde:</label>
+        <input id="fechaInicioFiltro" type="date" />
+    </div>
+    <div>
+        <label>Hasta:</label>
+        <input id="fechaFinFiltro" type="date" />
+    </div>
+    <button onclick="cargarObservaciones()">Aplicar Filtros</button>
+    <button id="toggleObservacionesBtn" onclick="toggleObservacionesVisibility()">Ocultar observaciones</button>
+</div>
 
 <h4>Buscar por curso</h4>
 
@@ -159,18 +165,19 @@ window.getDoc = getDoc;
 
 <button onclick="mostrarConteoCurso()">Contar observaciones</button>
 
-<div id="conteoCurso" class="message info" style="display:none; margin-top:10px;"></div>
+<div id="conteoCurso" class="message info" style="display:none;"></div>
 
 <h4>Buscar por estudiante</h4>
 
-<input id="searchEstudianteInput" placeholder="Buscar estudiante (nombre)" onkeyup="buscarObservacionesPorEstudiante()" style="width: calc(100% - 10px); padding: 8px; margin-bottom: 8px;" />
-<div id="searchEstudianteSugerencias" style="display:none; border: 1px solid #ccc; border-radius: 4px; max-height: 180px; overflow-y: auto; background: white;"></div>
+<input id="searchEstudianteInput" placeholder="Buscar estudiante (nombre)" onkeyup="buscarObservacionesPorEstudiante()" />
+<div id="searchEstudianteSugerencias" class="sugerencias-panel"></div>
 
-<button onclick="buscarObservacionesPorEstudiante()">Aplicar búsqueda por estudiante</button>
+<div class="botones-grid">
+    <button onclick="buscarObservacionesPorEstudiante()">Aplicar búsqueda por estudiante</button>
+    <button onclick="exportarObservaciones('filtro')">Descargar selección (curso + estudiante + fecha)</button>
+</div>
 
-<button onclick="exportarObservaciones('filtro')" style="margin-top:8px;">Descargar selección (curso + estudiante + fecha)</button>
-
-<div id="listaObservaciones" style="margin-top:20px;"></div>
+<div id="listaObservaciones"></div>
 
 </div>
 
