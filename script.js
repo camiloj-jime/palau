@@ -28,6 +28,8 @@ let periodoActual = null; // guarda el periodo previo para onPeriodoChange
 let observacionEditandoId = null; // ID de observación en edición
 let observacionesOcultas = false; // controla ocultar/mostrar lista de observaciones
 let telefonosCache = [];
+let estudianteEditandoIndex = null;
+let estudianteNombreOriginal = null;
 
 function showMessage(text, type = 'success', duration = 2200) {
     const message = document.getElementById('message');
@@ -102,6 +104,32 @@ function agregar() {
 
     if (!nombre) return;
 
+    const grado = document.getElementById("salon").value;
+    if (!grado) {
+        showMessage("Selecciona un salón antes de agregar", "warning");
+        return;
+    }
+
+    if (estudianteEditandoIndex !== null) {
+        const fila = tabla.rows[estudianteEditandoIndex];
+        if (fila) {
+            const nombreAnterior = estudianteNombreOriginal || fila.cells[1].innerText;
+            fila.cells[1].innerText = nombre;
+            showMessage("Nombre del estudiante actualizado", "success");
+            estudianteEditandoIndex = null;
+            estudianteNombreOriginal = null;
+            document.getElementById("nombreEstudiante").value = "";
+            document.getElementById("btnAgregarEstudiante").innerText = "Agregar";
+            document.getElementById("btnCancelarEdicion").style.display = "none";
+            llenarSelectorEstudiantes();
+            if (nombreAnterior !== nombre) {
+                actualizarNombreEstudianteFirebase(nombreAnterior, nombre, grado);
+            }
+        }
+        actualizar();
+        return;
+    }
+
     contador++;
 
     const fila = tabla.insertRow();
@@ -133,16 +161,69 @@ function agregar() {
 
     const acciones = fila.insertCell();
 
-    acciones.innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
+    acciones.innerHTML = `<button onclick="editarEstudianteFila(this)" class="btn-info">Editar</button><button onclick="eliminarFila(this)" class="btn-danger">Eliminar</button>`;
 
     document.getElementById("nombreEstudiante").value = "";
 
     actualizar();
     // No autoSave en agregar para evitar que los estudiantes se mezclen de curso antes de que el usuario confirme con Guardar
     llenarSelectorEstudiantes();
+}
 
-    const grado = document.getElementById("salon").value;
-    guardarEstudiante(nombre, grado);
+function editarEstudianteFila(btn) {
+    if (!tabla) tabla = document.getElementById("tabla");
+    const fila = btn.closest('tr');
+    if (!fila) return;
+
+    estudianteEditandoIndex = fila.rowIndex;
+    estudianteNombreOriginal = fila.cells[1].innerText;
+    document.getElementById("nombreEstudiante").value = estudianteNombreOriginal;
+    document.getElementById("btnAgregarEstudiante").innerText = "Guardar cambios";
+    const cancelarBtn = document.getElementById("btnCancelarEdicion");
+    if (cancelarBtn) cancelarBtn.style.display = "inline-flex";
+    document.getElementById("nombreEstudiante").focus();
+}
+
+function cancelarEdicionEstudiante() {
+    estudianteEditandoIndex = null;
+    estudianteNombreOriginal = null;
+    document.getElementById("nombreEstudiante").value = "";
+    const boton = document.getElementById("btnAgregarEstudiante");
+    if (boton) boton.innerText = "Agregar";
+    const cancelarBtn = document.getElementById("btnCancelarEdicion");
+    if (cancelarBtn) cancelarBtn.style.display = "none";
+}
+
+async function actualizarNombreEstudianteFirebase(nombreAntiguo, nombreNuevo, grado) {
+    if (!window.db || !nombreAntiguo || !nombreNuevo || !grado || nombreAntiguo === nombreNuevo) return;
+    try {
+        const q = window.query(
+            window.collection(window.db, "estudiantes"),
+            window.where("nombre", "==", nombreAntiguo),
+            window.where("grado", "==", grado)
+        );
+        const querySnapshot = await window.getDocs(q);
+
+        if (querySnapshot.empty) {
+            console.log("No se encontró el estudiante para actualizar nombre:", nombreAntiguo, grado);
+            return;
+        }
+
+        for (const docSnap of querySnapshot.docs) {
+            await window.setDoc(window.doc(window.db, "estudiantes", docSnap.id), {
+                nombre: nombreNuevo,
+                fechaActualizacion: new Date().getTime()
+            }, { merge: true });
+        }
+
+        await actualizarNombreEnAsistenciaFirebase(nombreAntiguo, nombreNuevo, grado);
+        await actualizarNombreEnObservacionesFirebase(nombreAntiguo, nombreNuevo, grado);
+
+        showMessage("Nombre actualizado en Firebase", "success");
+    } catch (error) {
+        console.error("Error actualizando nombre de estudiante en Firebase:", error);
+        showMessage("Error actualizando nombre en Firebase", "error");
+    }
 }
 async function guardarDatos(){
     try {
@@ -733,7 +814,7 @@ async function cargarSilent() {
                     `;
                 }
 
-                fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
+                fila.insertCell().innerHTML = `<button onclick="editarEstudianteFila(this)" class="btn-info">Editar</button><button onclick="eliminarFila(this)" class="btn-danger">Eliminar</button>`;
             });
 
             // Guardar la estructura inicial (sin estados) en localStorage para mantener registro, no escribir Firestore hasta guardado manual
@@ -782,7 +863,7 @@ function cargarEstudiantesEnTabla(dados) {
             actualizarColor(select);
         }
 
-        fila.insertCell().innerHTML = `<button onclick="eliminarFila(this)">Eliminar</button>`;
+        fila.insertCell().innerHTML = `<button onclick="editarEstudianteFila(this)" class="btn-info">Editar</button><button onclick="eliminarFila(this)" class="btn-danger">Eliminar</button>`;
     });
 
 llenarSelectorEstudiantes();
@@ -955,6 +1036,107 @@ async function guardarTelefono() {
     }
 }
 
+async function guardarNombreTelefono() {
+    const nombre = document.getElementById("searchTelefonoInput")?.value.trim();
+    const docId = document.getElementById("telefonoDocId")?.value;
+
+    if (!docId) {
+        showMessage("Selecciona primero un estudiante existente", "warning");
+        return;
+    }
+
+    if (!nombre) {
+        showMessage("Ingresa un nombre válido", "warning");
+        return;
+    }
+
+    try {
+        if (!window.db) {
+            showMessage("Firebase no está disponible", "error");
+            return;
+        }
+
+        const docRef = window.doc(window.db, "estudiantes", docId);
+        const docSnap = await window.getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            showMessage("No se encontró el estudiante en Firebase", "error");
+            return;
+        }
+
+        await window.setDoc(docRef, {
+            nombre,
+            fechaActualizacion: new Date().getTime()
+        }, { merge: true });
+
+        showMessage("Nombre actualizado correctamente", "success");
+        buscarTelefonos();
+    } catch (error) {
+        console.error("Error al guardar nombre del estudiante:", error);
+        showMessage("Error al actualizar nombre", "error");
+    }
+}
+
+async function actualizarNombreEnAsistenciaFirebase(nombreAntiguo, nombreNuevo, grado) {
+    if (!window.db || !nombreAntiguo || !nombreNuevo || !grado || nombreAntiguo === nombreNuevo) return;
+    try {
+        const q = window.query(
+            window.collection(window.db, "asistencia"),
+            window.where("grado", "==", grado)
+        );
+        const snapshot = await window.getDocs(q);
+
+        for (const docSnap of snapshot.docs) {
+            const data = docSnap.data();
+            const estudiantes = Array.isArray(data.estudiantes) ? data.estudiantes : [];
+            const nuevos = estudiantes.map(est => {
+                if (est.nombre === nombreAntiguo) {
+                    return { ...est, nombre: nombreNuevo };
+                }
+                return est;
+            });
+
+            const cambios = JSON.stringify(estudiantes) !== JSON.stringify(nuevos);
+            if (cambios) {
+                await window.setDoc(window.doc(window.db, "asistencia", docSnap.id), {
+                    ...data,
+                    estudiantes: nuevos,
+                    fechaActualizacion: new Date().getTime()
+                }, { merge: true });
+            }
+        }
+    } catch (error) {
+        console.error("Error actualizando nombre en asistencia Firebase:", error);
+    }
+}
+
+async function actualizarNombreEnObservacionesFirebase(nombreAntiguo, nombreNuevo, grado) {
+    if (!window.db || !nombreAntiguo || !nombreNuevo) return;
+    try {
+        const querySnapshot = await window.getDocs(window.collection(window.db, "observaciones"));
+        for (const docSnap of querySnapshot.docs) {
+            const data = docSnap.data();
+            const registros = Array.isArray(data.registros) ? data.registros : [];
+            const nuevos = registros.map(obs => {
+                if (obs.estudiante === nombreAntiguo) {
+                    return { ...obs, estudiante: nombreNuevo };
+                }
+                return obs;
+            });
+            const cambios = JSON.stringify(registros) !== JSON.stringify(nuevos);
+            if (cambios) {
+                await window.setDoc(window.doc(window.db, "observaciones", docSnap.id), {
+                    ...data,
+                    registros: nuevos,
+                    fechaActualizacion: new Date().getTime()
+                }, { merge: true });
+            }
+        }
+    } catch (error) {
+        console.error("Error actualizando nombre en observaciones Firebase:", error);
+    }
+}
+
 async function buscarTelefonos() {
     if (!document.getElementById("panelTelefono")) return;
 
@@ -1048,7 +1230,7 @@ function mostrarTelefonos(lista) {
             <td>${est.nombre || "-"}</td>
             <td>${telefonos}</td>
             <td class="table-action">
-                <button onclick="editarTelefono('${est.id}')">Seleccionar</button>
+                <button onclick="editarTelefono('${est.id}')" class="btn-info">Editar</button>
             </td>
         `;
         tbody.appendChild(fila);
